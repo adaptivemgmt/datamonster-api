@@ -1,0 +1,2 @@
+class DataMonsterError(Exception):
+    pass
