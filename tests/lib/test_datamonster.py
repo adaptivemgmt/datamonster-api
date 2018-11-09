@@ -174,7 +174,9 @@ def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
     assert 'company argument must be a Company object' in excinfo.value.args[0]
 
 
-def test_get_data(mocker, dm, avro_data_file, company):
-    """Test getting datasources. error states"""
-    import pdb; pdb.set_trace()
+def test_get_data(mocker, dm, avro_data_file, company, datasource):
+    """Test getting data"""
 
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
+
+    dm.get_data(company, datasource)

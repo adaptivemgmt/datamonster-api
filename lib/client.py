@@ -3,7 +3,7 @@ import hmac
 import hashlib
 import requests
 
-from errors import DataMonsterError
+from .errors import DataMonsterError
 
 
 class Client(object):

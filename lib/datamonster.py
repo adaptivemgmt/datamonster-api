@@ -1,9 +1,11 @@
-import urllib
+import fastavro
+import pandas
+import six
 
-from client import Client
-from company import Company
-from datasource import Datasource
-from errors import DataMonsterError
+from .client import Client
+from .company import Company
+from .datasource import Datasource
+from .errors import DataMonsterError
 
 
 class DataMonster(object):
@@ -33,6 +35,13 @@ class DataMonster(object):
             next_page = resp['pagination']['nextPageURI']
 
         return results
+
+    def _check_param(self, company=None, datasource=None):
+        if company is not None and not isinstance(company, Company):
+            raise DataMonsterError("company argument must be a Company object")
+
+        if datasource is not None and not isinstance(company, Datasource):
+            raise DataMonsterError("datasource argument must be a Datasource object")
 
     ##############################################
     #           Company functions
@@ -68,13 +77,12 @@ class DataMonster(object):
         if query:
             params['q'] = query
         if datasource:
-            if not isinstance(datasource, Datasource):
-                raise DataMonsterError("datasource argument must be a Datasource object")
+            self._check_param(datasource=datasource)
             params['datasource'] = datasource._id
 
         url = self.company_path
         if params:
-            url = ''.join([url, '?', urllib.urlencode(params)])
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         companies = self._get_paginated_results(url)
         return map(self._company_result_to_object, companies)
@@ -103,13 +111,12 @@ class DataMonster(object):
         if query:
             params['q'] = query
         if company:
-            if not isinstance(company, Company):
-                raise DataMonsterError("company argument must be a Company object")
+            self._check_param(company=company)
             params['companyId'] = company._id
 
         url = self.datasource_path
         if params:
-            url = ''.join([url, '?', urllib.urlencode(params)])
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         datasources = self._get_paginated_results(url)
         return map(self._datasource_result_to_object, datasources)
@@ -125,3 +132,30 @@ class DataMonster(object):
 
         :returns: pandas DataFrame
         """
+
+        self._check_param(company=company, datasource=datasource)
+
+        params = {
+            'companyId': company._id,
+        }
+
+        if start_date is not None:
+            params['start_date'] = start_date
+
+        if end_date is not None:
+            params['end_date'] = end_date
+
+        url = '{}/{}/data?{}'.format(self.datasource_path, datasource._id, six.moves.urllib.parse.urlencode(params))
+        headers = {'Accept': 'avro/binary'}
+        resp = self.client.get(url, headers)
+
+        return self._avro_to_df(resp.content)
+
+    def _avro_to_df(self, avro_buffer):
+        """Read an avro structure into a dataframe"""
+
+        fp = six.BytesIO(avro_buffer)
+        reader = fastavro.reader(fp)
+        records = [r for r in reader]
+        df = pandas.DataFrame.from_records(records)
+        return df
