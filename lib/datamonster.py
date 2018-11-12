@@ -40,15 +40,12 @@ class DataMonster(object):
         if company is not None and not isinstance(company, Company):
             raise DataMonsterError("company argument must be a Company object")
 
-        if datasource is not None and not isinstance(company, Datasource):
+        if datasource is not None and not isinstance(datasource, Datasource):
             raise DataMonsterError("datasource argument must be a Datasource object")
 
     ##############################################
     #           Company functions
     ##############################################
-    def _company_result_to_object(self, company):
-        return Company(company['id'], company['ticker'], company['name'], company['uri'], self)
-
     def get_company_by_ticker(self, ticker):
         """Get a single company by ticker
 
@@ -57,9 +54,10 @@ class DataMonster(object):
         :returns: Single Company object if any companies exactly match the ticker.  Raises DatamonsterError otherwise.
         """
 
+        ticker = ticker.lower()
         companies = self.get_companies(ticker)
         for company in companies:
-            if company.ticker == ticker:
+            if company.ticker.lower() == ticker:
                 return company
 
         raise DataMonsterError("Could not find company with ticker {}".format(ticker))
@@ -87,17 +85,22 @@ class DataMonster(object):
         companies = self._get_paginated_results(url)
         return map(self._company_result_to_object, companies)
 
+    def get_company_details(self, company_id):
+        """Get details for the given company
+
+        :param company_id: The ID of the company for which we get the details
+        :returns: dictionary object with the company details
+        """
+
+        path = '{}/{}'.format(self.company_path, company_id)
+        return self.client.get(path)
+
+    def _company_result_to_object(self, company):
+        return Company(company['id'], company['ticker'], company['name'], company['uri'], self)
+
     ##############################################
     #           Datasource functions
     ##############################################
-    def _datasource_result_to_object(self, datasource):
-        return Datasource(
-            datasource['id'],
-            datasource['name'],
-            datasource['category'],
-            datasource['uri'],
-            self)
-
     def get_datasources(self, query=None, company=None):
         """Get available datasources
 
@@ -132,7 +135,6 @@ class DataMonster(object):
 
         :returns: pandas DataFrame
         """
-
         self._check_param(company=company, datasource=datasource)
 
         params = {
@@ -149,7 +151,15 @@ class DataMonster(object):
         headers = {'Accept': 'avro/binary'}
         resp = self.client.get(url, headers)
 
-        return self._avro_to_df(resp.content)
+        return self._avro_to_df(resp)
+
+    def _datasource_result_to_object(self, datasource):
+        return Datasource(
+            datasource['id'],
+            datasource['name'],
+            datasource['category'],
+            datasource['uri'],
+            self)
 
     def _avro_to_df(self, avro_buffer):
         """Read an avro structure into a dataframe"""
@@ -158,4 +168,30 @@ class DataMonster(object):
         reader = fastavro.reader(fp)
         records = [r for r in reader]
         df = pandas.DataFrame.from_records(records)
+
+        # Convert date columns to datetime64 columns
+        df['upperDate'] = df['upperDate'].astype('datetime64[ns]')
+        df['lowerDate'] = df['lowerDate'].astype('datetime64[ns]')
+
+        # Create the timespan. Note we add 1 day because both dates are inclusive
+        df['upperDate'] += pandas.DateOffset(1)
+        df['time_span'] = df['upperDate'] - df['lowerDate']
+
+        # Remove the upperDate to reduce confusion
+        del df['upperDate']
+
+        # Rename the start_date. There's a more performant way to do this somewhere
+        df['start_date'] = df['lowerDate']
+        del df['lowerDate']
+
         return df
+
+    def _get_datasource_details(self, datasource_id):
+        """Get details for the given datasource
+
+        :param datasource_id: The ID of the datasource for which we get the details
+        :returns: dictionary object with the datasource details
+        """
+
+        path = '{}/{}'.format(self.datasource_path, datasource_id)
+        return self.client.get(path)

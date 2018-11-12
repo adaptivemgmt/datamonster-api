@@ -9,7 +9,8 @@ from .errors import DataMonsterError
 class Client(object):
     """Low level client for interacting with the server"""
 
-    domain = 'https://staging.adaptivemgmt.com'
+    # domain = 'https://staging.adaptivemgmt.com'
+    domain = 'http://127.0.0.1:5000'
 
     def __init__(self, key_id, secret, domain=None):
         self.key_id = key_id
@@ -47,4 +48,11 @@ class Client(object):
         if resp.status_code != 200:
             raise DataMonsterError(resp.content)
 
-        return resp.json()
+        if resp.headers['Content-Type'] == 'application/json':
+            return resp.json()
+        elif resp.headers['Content-Type'] == 'avro/binary':
+            return resp.content
+        else:
+            raise DataMonsterError(
+                'Unexpected content type: {}'.format(resp.headers['Content-Type'])
+            )

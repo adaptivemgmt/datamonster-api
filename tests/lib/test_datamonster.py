@@ -1,3 +1,4 @@
+import datetime
 import pytest
 
 from lib.errors import DataMonsterError
@@ -87,9 +88,14 @@ def test_get_companies_3(dm):
 def test_get_companies_by_ticker_1(mocker, dm, multi_page_company_results):
     """Test getting company by ticker"""
 
+    # matches case
     dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
     company = dm.get_company_by_ticker('c3')
+    _assert_object_matches_company(company, multi_page_company_results[1]['results'][0])
 
+    # does not match case
+    dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
+    company = dm.get_company_by_ticker('C3')
     _assert_object_matches_company(company, multi_page_company_results[1]['results'][0])
 
 
@@ -179,4 +185,35 @@ def test_get_data(mocker, dm, avro_data_file, company, datasource):
 
     dm.client.get = mocker.Mock(return_value=avro_data_file)
 
-    dm.get_data(company, datasource)
+    df = dm.get_data(datasource, company)
+
+    # Check that we called the client correctly
+    expected_path = '/rest/datasource/{}/data?companyId={}'.format(
+        datasource._id,
+        company._id
+    )
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == expected_path
+    assert dm.client.get.call_args[0][1] == {'Accept': 'avro/binary'}
+
+    # Check the columns
+    assert len(df.columns) == 4
+    assert 'dimensions' in df.columns
+    assert 'start_date' in df.columns
+    assert 'time_span' in df.columns
+    assert 'value' in df.columns
+
+    # size sanity check
+    assert len(df) == 12
+
+    # Check the first row
+    assert df.iloc[0]['dimensions'] == {'category': u''}
+    assert df.iloc[0]['value'] == 0.318149
+    assert df.iloc[0]['start_date'].date() == datetime.date(2018, 1, 5)
+    assert df.iloc[0]['time_span'].to_pytimedelta() == datetime.timedelta(days=1)
+
+    # Check the last row
+    assert df.iloc[11]['dimensions'] == {'category': u'Acquisition Adjusted'}
+    assert df.iloc[11]['value'] == 0.383680
+    assert df.iloc[11]['start_date'].date() == datetime.date(2018, 1, 10)
+    assert df.iloc[11]['time_span'].to_pytimedelta() == datetime.timedelta(days=1)
