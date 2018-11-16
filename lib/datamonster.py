@@ -2,6 +2,7 @@ import fastavro
 import pandas
 import six
 
+from .aggregation import aggregation_sanity_check
 from .client import Client
 from .company import Company
 from .datasource import Datasource
@@ -76,14 +77,14 @@ class DataMonster(object):
             params['q'] = query
         if datasource:
             self._check_param(datasource=datasource)
-            params['datasource'] = datasource._id
+            params['datasourceId'] = datasource._id
 
         url = self.company_path
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         companies = self._get_paginated_results(url)
-        return map(self._company_result_to_object, companies)
+        return list(map(self._company_result_to_object, companies))
 
     def get_company_details(self, company_id):
         """Get details for the given company
@@ -122,7 +123,7 @@ class DataMonster(object):
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         datasources = self._get_paginated_results(url)
-        return map(self._datasource_result_to_object, datasources)
+        return list(map(self._datasource_result_to_object, datasources))
 
     def get_data(self, datasource, company, aggregation=None, start_date=None, end_date=None):
         """Get available datasources
@@ -142,16 +143,37 @@ class DataMonster(object):
         }
 
         if start_date is not None:
-            params['start_date'] = start_date
+            params['startDate'] = start_date
 
         if end_date is not None:
-            params['end_date'] = end_date
+            params['endDate'] = end_date
+
+        if aggregation:
+            aggregation_sanity_check(aggregation)
+            if aggregation.period == 'fiscalQuarter':
+                if aggregation.company is None:
+                    raise DataMonsterError("Company must be specified for a fiscalQuarter aggregation")
+                if aggregation.company._id != company._id:
+                    raise DataMonsterError("Aggregating by the fiscal quarter of a different company not yet supported")
+
+            if aggregation.period is not None:
+                params['aggregation'] = aggregation.period
 
         url = '{}/{}/data?{}'.format(self.datasource_path, datasource._id, six.moves.urllib.parse.urlencode(params))
         headers = {'Accept': 'avro/binary'}
         resp = self.client.get(url, headers)
 
         return self._avro_to_df(resp)
+
+    def get_datasource_details(self, datasource_id):
+        """Get details for the given datasource
+
+        :param datasource_id: The ID of the datasource for which we get the details
+        :returns: dictionary object with the datasource details
+        """
+
+        path = '{}/{}'.format(self.datasource_path, datasource_id)
+        return self.client.get(path)
 
     def _datasource_result_to_object(self, datasource):
         return Datasource(
@@ -185,13 +207,3 @@ class DataMonster(object):
         del df['lowerDate']
 
         return df
-
-    def _get_datasource_details(self, datasource_id):
-        """Get details for the given datasource
-
-        :param datasource_id: The ID of the datasource for which we get the details
-        :returns: dictionary object with the datasource details
-        """
-
-        path = '{}/{}'.format(self.datasource_path, datasource_id)
-        return self.client.get(path)

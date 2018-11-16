@@ -30,6 +30,11 @@ def company():
 
 
 @pytest.fixture
+def other_company():
+    return Company('other_id', 'other_ticker', 'other_name', 'other_uri', None)
+
+
+@pytest.fixture
 def single_page_company_results():
     return {
         "pagination": {
@@ -171,5 +176,5 @@ def multi_page_datasource_results():
 
 @pytest.fixture
 def avro_data_file(datadir):
-    with open(os.path.join(datadir, 'avro_data_file')) as fp:
+    with open(os.path.join(datadir, 'avro_data_file'), 'rb') as fp:
         return fp.read()

@@ -21,11 +21,12 @@ class Client(object):
     def compute_hash_string(self, method, path, date_str, secret_str):
         msg_to_hash = '\n'.join([method, path, date_str])
         secret_binary = bytes(bytearray.fromhex(secret_str))
+
         return hmac.new(
             secret_binary,
             msg_to_hash.encode('utf-8'),
             hashlib.sha256
-        ).digest().encode('hex')
+        ).hexdigest()
 
     def get(self, path, headers={}):
         date = datetime.datetime.utcnow()

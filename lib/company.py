@@ -1,4 +1,4 @@
-from base import BaseClass
+from .base import BaseClass
 
 
 class Company(BaseClass):

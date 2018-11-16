@@ -2,6 +2,7 @@ import datetime
 import pytest
 
 from lib.errors import DataMonsterError
+from lib.aggregation import Aggregation
 
 
 ##############################################
@@ -19,10 +20,11 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
 
     # The resulting companies should always be the same
     def assert_results_good(results):
-        assert len(companies) == 2
+        results = list(results)
+        assert len(results) == 2
 
-        _assert_object_matches_company(companies[0], single_page_company_results['results'][0])
-        _assert_object_matches_company(companies[1], single_page_company_results['results'][1])
+        _assert_object_matches_company(results[0], single_page_company_results['results'][0])
+        _assert_object_matches_company(results[1], single_page_company_results['results'][1])
 
     dm.client.get = mocker.Mock(return_value=single_page_company_results)
     # No queries, no datasource
@@ -46,7 +48,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(datasource=datasource)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/company?datasource={}'.format(datasource._id)
+    assert dm.client.get.call_args[0][0] == '/rest/company?datasourceId={}'.format(datasource._id)
     assert_results_good(companies)
 
     # text query, datasource
@@ -54,7 +56,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(query='abc', datasource=datasource)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/company?q=abc&datasource={}'.format(datasource._id)
+    assert dm.client.get.call_args[0][0] == '/rest/company?q=abc&datasourceId={}'.format(datasource._id)
     assert_results_good(companies)
 
 
@@ -63,6 +65,7 @@ def test_get_companies_2(mocker, dm, multi_page_company_results):
 
     dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
     companies = dm.get_companies()
+    companies = list(companies)
 
     assert dm.client.get.call_count == 2
 
@@ -125,6 +128,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
 
     # The resulting datasources should always be the same
     def assert_results_good(results):
+        results = list(results)
         assert len(results) == 2
 
         _assert_object_matches_datasource(
@@ -180,8 +184,8 @@ def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
     assert 'company argument must be a Company object' in excinfo.value.args[0]
 
 
-def test_get_data(mocker, dm, avro_data_file, company, datasource):
-    """Test getting data"""
+def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
+    """Test getting data -- happy case"""
 
     dm.client.get = mocker.Mock(return_value=avro_data_file)
 
@@ -217,3 +221,90 @@ def test_get_data(mocker, dm, avro_data_file, company, datasource):
     assert df.iloc[11]['value'] == 0.383680
     assert df.iloc[11]['start_date'].date() == datetime.date(2018, 1, 10)
     assert df.iloc[11]['time_span'].to_pytimedelta() == datetime.timedelta(days=1)
+
+
+def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasource):
+    """Test getting data -- bad aggregations"""
+
+    # ** aggregation period is invalid
+    agg = Aggregation(period=123, company=None)
+    with pytest.raises(DataMonsterError) as excinfo:
+        dm.get_data(datasource, company, agg)
+
+    assert 'Bad Aggregation Period' in excinfo.value.args[0]
+
+    # ** aggregation company is invalid
+    agg = Aggregation(period='month', company=123)
+    with pytest.raises(DataMonsterError) as excinfo:
+        dm.get_data(datasource, company, agg)
+
+    assert 'Aggregation company must be Company' in excinfo.value.args[0]
+
+    # ** fiscal quarter aggregation -- no company
+    agg = Aggregation(period='fiscalQuarter', company=None)
+    with pytest.raises(DataMonsterError) as excinfo:
+        dm.get_data(datasource, company, agg)
+
+    assert 'Company must be specified for a fiscalQuarter aggregation' in excinfo.value.args[0]
+
+    # ** fiscal quarter aggregation -- different company
+    agg = Aggregation(period='fiscalQuarter', company=other_company)
+    with pytest.raises(DataMonsterError) as excinfo:
+        dm.get_data(datasource, company, agg)
+
+    assert 'Aggregating by the fiscal quarter of a different company not yet supported' in excinfo.value.args[0]
+
+
+def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasource):
+    """Test getting data -- good aggregations"""
+
+    # ** monthly aggregation
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    agg = Aggregation(period='month', company=None)
+
+    dm.get_data(datasource, company, agg)
+
+    expected_path = '/rest/datasource/{}/data?companyId={}&aggregation=month'.format(
+        datasource._id,
+        company._id
+    )
+    assert dm.client.get.call_args[0][0] == expected_path
+
+    # ** fiscal quarter aggregation -- good company
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    agg = Aggregation(period='fiscalQuarter', company=company)
+
+    dm.get_data(datasource, company, agg)
+
+    expected_path = '/rest/datasource/{}/data?companyId={}&aggregation=fiscalQuarter'.format(
+        datasource._id,
+        company._id
+    )
+    assert dm.client.get.call_args[0][0] == expected_path
+
+
+def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasource):
+    """Test getting data -- date filters"""
+
+    # ** monthly aggregation, start date
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    agg = Aggregation(period='month', company=None)
+
+    dm.get_data(datasource, company, agg, start_date=datetime.date(2000, 1, 1))
+
+    expected_path = '/rest/datasource/{}/data?companyId={}&startDate=2000-01-01&aggregation=month'.format(
+        datasource._id,
+        company._id
+    )
+    assert dm.client.get.call_args[0][0] == expected_path
+
+    # ** start and end date
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
+
+    dm.get_data(datasource, company, start_date=datetime.date(2000, 1, 1), end_date=datetime.date(2001, 1, 1))
+
+    expected_path = '/rest/datasource/{}/data?companyId={}&startDate=2000-01-01&endDate=2001-01-01'.format(
+        datasource._id,
+        company._id
+    )
+    assert dm.client.get.call_args[0][0] == expected_path

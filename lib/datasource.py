@@ -1,4 +1,4 @@
-from base import BaseClass
+from .base import BaseClass
 
 
 class Datasource(BaseClass):
@@ -24,4 +24,4 @@ class Datasource(BaseClass):
         return self._companies
 
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
-        return self.dm.get_data(self, company, aggregation=None, start_date=None, end_date=None)
+        return self.dm.get_data(self, company, aggregation, start_date, end_date)
