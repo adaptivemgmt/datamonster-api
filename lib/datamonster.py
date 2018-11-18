@@ -18,10 +18,10 @@ class DataMonster(object):
     ##############################################
     #           Generic functions
     ##############################################
-    def __init__(self, key_id, secret):
+    def __init__(self, key_id, secret, server=None):
         """Must initialize with your key_id and secret"""
 
-        self.client = Client(key_id, secret)
+        self.client = Client(key_id, secret, server)
         self.key_id = key_id
         self.secret = secret
 

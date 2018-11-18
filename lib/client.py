@@ -9,14 +9,13 @@ from .errors import DataMonsterError
 class Client(object):
     """Low level client for interacting with the server"""
 
-    # domain = 'https://staging.adaptivemgmt.com'
-    domain = 'http://127.0.0.1:5000'
+    server = 'https://dm.adaptivemgmt.com'
 
-    def __init__(self, key_id, secret, domain=None):
+    def __init__(self, key_id, secret, server=None):
         self.key_id = key_id
         self.secret = secret
-        if domain:
-            self.domain = domain
+        if server:
+            self.server = server
 
     def compute_hash_string(self, method, path, date_str, secret_str):
         msg_to_hash = '\n'.join([method, path, date_str])
@@ -43,7 +42,7 @@ class Client(object):
         session.headers['Accept'] = 'application/json'
         session.headers.update(headers)
 
-        url = '{}{}'.format(self.domain, path)
+        url = '{}{}'.format(self.server, path)
         resp = session.get(url)
 
         if resp.status_code != 200:
