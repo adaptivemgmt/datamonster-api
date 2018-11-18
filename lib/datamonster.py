@@ -12,8 +12,8 @@ from .errors import DataMonsterError
 class DataMonster(object):
     """Datamonster object. Main entry point to the library"""
 
-    company_path = '/rest/company'
-    datasource_path = '/rest/datasource'
+    company_path = '/rest/v1/company'
+    datasource_path = '/rest/v1/datasource'
 
     ##############################################
     #           Generic functions
