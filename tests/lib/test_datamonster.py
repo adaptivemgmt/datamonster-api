@@ -1,6 +1,8 @@
 import datetime
 import pytest
 
+from six.moves.urllib.parse import urlparse, parse_qs
+
 from lib.errors import DataMonsterError
 from lib.aggregation import Aggregation
 
@@ -264,11 +266,13 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
 
     dm.get_data(datasource, company, agg)
 
-    expected_path = '/rest/datasource/{}/data?companyId={}&aggregation=month'.format(
-        datasource._id,
-        company._id
-    )
-    assert dm.client.get.call_args[0][0] == expected_path
+    url = urlparse(dm.client.get.call_args[0][0])
+    query = parse_qs(url.query)
+
+    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert len(query) == 2
+    assert query['aggregation'] == ['month']
+    assert query['companyId'] == [company._id]
 
     # ** fiscal quarter aggregation -- good company
     dm.client.get = mocker.Mock(return_value=avro_data_file)
@@ -276,11 +280,13 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
 
     dm.get_data(datasource, company, agg)
 
-    expected_path = '/rest/datasource/{}/data?companyId={}&aggregation=fiscalQuarter'.format(
-        datasource._id,
-        company._id
-    )
-    assert dm.client.get.call_args[0][0] == expected_path
+    url = urlparse(dm.client.get.call_args[0][0])
+    query = parse_qs(url.query)
+
+    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert len(query) == 2
+    assert query['aggregation'] == ['fiscalQuarter']
+    assert query['companyId'] == [company._id]
 
 
 def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasource):
@@ -292,19 +298,25 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
 
     dm.get_data(datasource, company, agg, start_date=datetime.date(2000, 1, 1))
 
-    expected_path = '/rest/datasource/{}/data?companyId={}&startDate=2000-01-01&aggregation=month'.format(
-        datasource._id,
-        company._id
-    )
-    assert dm.client.get.call_args[0][0] == expected_path
+    url = urlparse(dm.client.get.call_args[0][0])
+    query = parse_qs(url.query)
+
+    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert len(query) == 3
+    assert query['aggregation'] == ['month']
+    assert query['companyId'] == [company._id]
+    assert query['startDate'] == ['2000-01-01']
 
     # ** start and end date
     dm.client.get = mocker.Mock(return_value=avro_data_file)
 
     dm.get_data(datasource, company, start_date=datetime.date(2000, 1, 1), end_date=datetime.date(2001, 1, 1))
 
-    expected_path = '/rest/datasource/{}/data?companyId={}&startDate=2000-01-01&endDate=2001-01-01'.format(
-        datasource._id,
-        company._id
-    )
-    assert dm.client.get.call_args[0][0] == expected_path
+    url = urlparse(dm.client.get.call_args[0][0])
+    query = parse_qs(url.query)
+
+    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert len(query) == 3
+    assert query['companyId'] == [company._id]
+    assert query['startDate'] == ['2000-01-01']
+    assert query['endDate'] == ['2001-01-01']
