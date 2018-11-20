@@ -11,11 +11,13 @@ class Client(object):
 
     server = 'https://dm.adaptivemgmt.com'
 
-    def __init__(self, key_id, secret, server=None):
+    def __init__(self, key_id, secret, server=None, verify=True):
         self.key_id = key_id
         self.secret = secret
         if server:
             self.server = server
+
+        self.verify = verify
 
     def compute_hash_string(self, method, path, date_str, secret_str):
         msg_to_hash = '\n'.join([method, path, date_str])
@@ -43,7 +45,7 @@ class Client(object):
         session.headers.update(headers)
 
         url = '{}{}'.format(self.server, path)
-        resp = session.get(url)
+        resp = session.get(url, verify=self.verify)
 
         if resp.status_code != 200:
             raise DataMonsterError(resp.content)
