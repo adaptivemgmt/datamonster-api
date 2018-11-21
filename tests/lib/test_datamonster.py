@@ -34,7 +34,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies()
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/company'
+    assert dm.client.get.call_args[0][0] == '/rest/v1/company'
     assert_results_good(companies)
 
     # text query, no datasource
@@ -42,7 +42,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(query='abc')
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/company?q=abc'
+    assert dm.client.get.call_args[0][0] == '/rest/v1/company?q=abc'
     assert_results_good(companies)
 
     # no text query, datasource
@@ -50,7 +50,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(datasource=datasource)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/company?datasourceId={}'.format(datasource._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/company?datasourceId={}'.format(datasource._id)
     assert_results_good(companies)
 
     # text query, datasource
@@ -58,7 +58,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(query='abc', datasource=datasource)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/company?q=abc&datasourceId={}'.format(datasource._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/company?q=abc&datasourceId={}'.format(datasource._id)
     assert_results_good(companies)
 
 
@@ -71,7 +71,7 @@ def test_get_companies_2(mocker, dm, multi_page_company_results):
 
     assert dm.client.get.call_count == 2
 
-    assert dm.client.get.call_args_list[0][0][0] == '/rest/company'
+    assert dm.client.get.call_args_list[0][0][0] == '/rest/v1/company'
     assert dm.client.get.call_args_list[1][0][0] == multi_page_company_results[0]['pagination']['nextPageURI']
     assert len(companies) == 4
     _assert_object_matches_company(companies[0], multi_page_company_results[0]['results'][0])
@@ -148,7 +148,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     datasources = dm.get_datasources()
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/datasource'
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource'
     assert_results_good(datasources)
 
     # ++ text query, no company
@@ -156,7 +156,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     datasources = dm.get_datasources(query='abc')
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/datasource?q=abc'
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?q=abc'
     assert_results_good(datasources)
 
     # ++ no text query, company
@@ -164,7 +164,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     datasources = dm.get_datasources(company=company)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/datasource?companyId={}'.format(company._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?companyId={}'.format(company._id)
     assert_results_good(datasources)
 
     # ++ text query, company
@@ -172,7 +172,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     datasources = dm.get_datasources(query='abc', company=company)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/datasource?q=abc&companyId={}'.format(company._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?q=abc&companyId={}'.format(company._id)
     assert_results_good(datasources)
 
 
@@ -194,7 +194,7 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
-    expected_path = '/rest/datasource/{}/data?companyId={}'.format(
+    expected_path = '/rest/v1/datasource/{}/data?companyId={}'.format(
         datasource._id,
         company._id
     )
@@ -269,7 +269,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
     assert len(query) == 2
     assert query['aggregation'] == ['month']
     assert query['companyId'] == [company._id]
@@ -283,7 +283,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
     assert len(query) == 2
     assert query['aggregation'] == ['fiscalQuarter']
     assert query['companyId'] == [company._id]
@@ -301,7 +301,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
     assert len(query) == 3
     assert query['aggregation'] == ['month']
     assert query['companyId'] == [company._id]
@@ -315,7 +315,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
     assert len(query) == 3
     assert query['companyId'] == [company._id]
     assert query['startDate'] == ['2000-01-01']

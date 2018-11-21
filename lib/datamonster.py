@@ -58,7 +58,7 @@ class DataMonster(object):
         ticker = ticker.lower()
         companies = self.get_companies(ticker)
         for company in companies:
-            if company.ticker.lower() == ticker:
+            if company.ticker is not None and company.ticker.lower() == ticker:
                 return company
 
         raise DataMonsterError("Could not find company with ticker {}".format(ticker))

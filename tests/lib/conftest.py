@@ -48,12 +48,12 @@ def single_page_company_results():
             "name": "Company 1",
             "ticker": "c1",
             "id": "1",
-            "uri": "https://dm.datamonster.com/rest/company/1"
+            "uri": "https://dm.datamonster.com/rest/v1/company/1"
         }, {
             "name": "Company 2",
             "ticker": "c2",
             "id": "2",
-            "uri": "https://dm.datamonster.com/rest/company/2"
+            "uri": "https://dm.datamonster.com/rest/v1/company/2"
         }]
     }
 
@@ -65,19 +65,19 @@ def multi_page_company_results():
             "totalResults": 4,
             "pageSize": 2,
             "currentPage": 0,
-            "nextPageURI": '/rest/company?p=1',
+            "nextPageURI": '/rest/v1/company?p=1',
             "previousPageURI": None,
         },
         "results": [{
             "name": "Company 1",
-            "ticker": "c1",
+            "ticker": None,
             "id": "1",
-            "uri": "https://dm.datamonster.com/rest/company/1"
+            "uri": "https://dm.datamonster.com/rest/v1/company/1"
         }, {
             "name": "Company 2",
             "ticker": "c2",
             "id": "2",
-            "uri": "https://dm.datamonster.com/rest/company/2"
+            "uri": "https://dm.datamonster.com/rest/v1/company/2"
         }]
     }, {
         "pagination": {
@@ -85,18 +85,18 @@ def multi_page_company_results():
             "pageSize": 2,
             "currentPage": 1,
             "nextPageURI": None,
-            "previousPageURI": '/rest/company?p=0',
+            "previousPageURI": '/rest/v1/company?p=0',
         },
         "results": [{
             "name": "Company 3",
             "ticker": "c3",
             "id": "3",
-            "uri": "https://dm.datamonster.com/rest/company/3"
+            "uri": "https://dm.datamonster.com/rest/v1/company/3"
         }, {
             "name": "Company 4",
             "ticker": "c4",
             "id": "4",
-            "uri": "https://dm.datamonster.com/rest/company/4"
+            "uri": "https://dm.datamonster.com/rest/v1/company/4"
         }]
     }]
 
@@ -134,7 +134,7 @@ def multi_page_datasource_results():
             "totalResults": 4,
             "pageSize": 2,
             "currentPage": 0,
-            "nextPageURI": "/rest/datasources/?p=1",
+            "nextPageURI": "/rest/v1/datasources/?p=1",
             "previousPageURI": None,
         },
         "results": [{
@@ -156,7 +156,7 @@ def multi_page_datasource_results():
             "pageSize": 2,
             "currentPage": 1,
             "nextPageURI": None,
-            "previousPageURI": "/rest/datasources/?p=0",
+            "previousPageURI": "/rest/v1/datasources/?p=0",
         },
         "results": [{
             "id": "id 3",
