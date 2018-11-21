@@ -186,6 +186,25 @@ def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
     assert 'company argument must be a Company object' in excinfo.value.args[0]
 
 
+def test_get_datasource_by_id(mocker, dm, datasource_details_result):
+    """Test getting datasource by uuid"""
+
+    dm.client.get = mocker.Mock(return_value=datasource_details_result)
+
+    datasource = dm.get_datasource_by_id('abc')
+
+    # Make sure we hit the right endpoint
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource/abc'
+
+    # a couple of spot checks.
+    assert datasource.category == 'category'
+    assert datasource.cadence == 'daily'
+
+    # Make sure we didn't go through the client again for the details
+    assert dm.client.get.call_count == 1
+
+
 def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     """Test getting data -- happy case"""
 

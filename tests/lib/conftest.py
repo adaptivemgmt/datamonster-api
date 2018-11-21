@@ -175,6 +175,25 @@ def multi_page_datasource_results():
 
 
 @pytest.fixture
+def datasource_details_result():
+
+    return {
+        "id": "id",
+        "name": "name",
+        "type": "datasource",
+        "category": "category",
+        "earliestData": "2015-01-01",
+        "latestData": "2018-10-01",
+        "cadence": "daily",
+        "aggregationType": "sum",
+        "splitColumns": [
+            "country",
+            "domain"
+        ]
+    }
+
+
+@pytest.fixture
 def avro_data_file(datadir):
     with open(os.path.join(datadir, 'avro_data_file'), 'rb') as fp:
         return fp.read()

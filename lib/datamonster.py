@@ -125,6 +125,12 @@ class DataMonster(object):
         datasources = self._get_paginated_results(url)
         return list(map(self._datasource_result_to_object, datasources))
 
+    def get_datasource_by_id(self, datasource_id):
+        """Given an ID, fill in a datasource"""
+        datasource = self.get_datasource_details(datasource_id)
+        datasource['uri'] = self._get_datasource_path(datasource_id)
+        return self._datasource_result_to_object(datasource, has_details=True)
+
     def get_data(self, datasource, company, aggregation=None, start_date=None, end_date=None):
         """Get available datasources
 
@@ -172,16 +178,24 @@ class DataMonster(object):
         :returns: dictionary object with the datasource details
         """
 
-        path = '{}/{}'.format(self.datasource_path, datasource_id)
+        path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
 
-    def _datasource_result_to_object(self, datasource):
-        return Datasource(
+    def _get_datasource_path(self, datasource_id):
+        return '{}/{}'.format(self.datasource_path, datasource_id)
+
+    def _datasource_result_to_object(self, datasource, has_details=False):
+        ds_inst = Datasource(
             datasource['id'],
             datasource['name'],
             datasource['category'],
             datasource['uri'],
             self)
+
+        if has_details:
+            ds_inst.set_details(datasource)
+
+        return ds_inst
 
     def _avro_to_df(self, avro_buffer):
         """Read an avro structure into a dataframe"""

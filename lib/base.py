@@ -14,5 +14,8 @@ class BaseClass(object):
         else:
             raise AttributeError
 
+    def set_details(self, details):
+        self._details = details
+
     def get_details(self):
         raise NotImplemented()
