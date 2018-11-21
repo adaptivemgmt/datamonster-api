@@ -41,7 +41,7 @@ Getting data
 
 .. code-block:: python
 
-        improt datetime
+        import datetime
         from lib.aggregation import Aggregation
 
         datasource = apple.datasources[:5]          # Gets a datasource object
