@@ -6,15 +6,15 @@ class Company(BaseClass):
 
     _details = None
 
-    def __init__(self, _id, ticker, name, uri, dm):
-        self._id = _id
+    def __init__(self, id_, ticker, name, uri, dm):
+        self.id = id_
         self.ticker = ticker
         self.name = name
         self.uri = uri
         self.dm = dm
 
     def get_details(self):
-        return self.dm.get_company_details(self._id)
+        return self.dm.get_company_details(self.id)
 
     @property
     def datasources(self):

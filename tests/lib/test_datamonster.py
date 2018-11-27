@@ -11,7 +11,7 @@ from lib.aggregation import Aggregation
 #           Company Tests
 ##############################################
 def _assert_object_matches_company(company, company_obj):
-    assert company_obj['id'] == company._id
+    assert company_obj['id'] == company.id
     assert company_obj['name'] == company.name
     assert company_obj['ticker'] == company.ticker
     assert company_obj['uri'] == company.uri
@@ -50,7 +50,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(datasource=datasource)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/v1/company?datasourceId={}'.format(datasource._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/company?datasourceId={}'.format(datasource.id)
     assert_results_good(companies)
 
     # text query, datasource
@@ -58,7 +58,7 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     companies = dm.get_companies(query='abc', datasource=datasource)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/v1/company?q=abc&datasourceId={}'.format(datasource._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/company?q=abc&datasourceId={}'.format(datasource.id)
     assert_results_good(companies)
 
 
@@ -119,7 +119,7 @@ def test_get_companies_by_ticker_2(mocker, dm, multi_page_company_results):
 #           Datasource Tests
 ##############################################
 def _assert_object_matches_datasource(datasource, datasource_obj):
-    assert datasource_obj['id'] == datasource._id
+    assert datasource_obj['id'] == datasource.id
     assert datasource_obj['name'] == datasource.name
     assert datasource_obj['category'] == datasource.category
     assert datasource_obj['uri'] == datasource.uri
@@ -164,7 +164,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     datasources = dm.get_datasources(company=company)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?companyId={}'.format(company._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?companyId={}'.format(company.id)
     assert_results_good(datasources)
 
     # ++ text query, company
@@ -172,7 +172,7 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     datasources = dm.get_datasources(query='abc', company=company)
 
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?q=abc&companyId={}'.format(company._id)
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?q=abc&companyId={}'.format(company.id)
     assert_results_good(datasources)
 
 
@@ -214,8 +214,8 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
 
     # Check that we called the client correctly
     expected_path = '/rest/v1/datasource/{}/data?companyId={}'.format(
-        datasource._id,
-        company._id
+        datasource.id,
+        company.id
     )
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == expected_path
@@ -288,10 +288,10 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource.id)
     assert len(query) == 2
     assert query['aggregation'] == ['month']
-    assert query['companyId'] == [company._id]
+    assert query['companyId'] == [company.id]
 
     # ** fiscal quarter aggregation -- good company
     dm.client.get = mocker.Mock(return_value=avro_data_file)
@@ -302,10 +302,10 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource.id)
     assert len(query) == 2
     assert query['aggregation'] == ['fiscalQuarter']
-    assert query['companyId'] == [company._id]
+    assert query['companyId'] == [company.id]
 
 
 def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasource):
@@ -320,10 +320,10 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource.id)
     assert len(query) == 3
     assert query['aggregation'] == ['month']
-    assert query['companyId'] == [company._id]
+    assert query['companyId'] == [company.id]
     assert query['startDate'] == ['2000-01-01']
 
     # ** start and end date
@@ -334,8 +334,8 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource._id)
+    assert url.path == '/rest/v1/datasource/{}/data'.format(datasource.id)
     assert len(query) == 3
-    assert query['companyId'] == [company._id]
+    assert query['companyId'] == [company.id]
     assert query['startDate'] == ['2000-01-01']
     assert query['endDate'] == ['2001-01-01']

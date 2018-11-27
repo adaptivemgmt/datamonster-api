@@ -77,7 +77,7 @@ class DataMonster(object):
             params['q'] = query
         if datasource:
             self._check_param(datasource=datasource)
-            params['datasourceId'] = datasource._id
+            params['datasourceId'] = datasource.id
 
         url = self.company_path
         if params:
@@ -116,7 +116,7 @@ class DataMonster(object):
             params['q'] = query
         if company:
             self._check_param(company=company)
-            params['companyId'] = company._id
+            params['companyId'] = company.id
 
         url = self.datasource_path
         if params:
@@ -145,7 +145,7 @@ class DataMonster(object):
         self._check_param(company=company, datasource=datasource)
 
         params = {
-            'companyId': company._id,
+            'companyId': company.id,
         }
 
         if start_date is not None:
@@ -159,13 +159,13 @@ class DataMonster(object):
             if aggregation.period == 'fiscalQuarter':
                 if aggregation.company is None:
                     raise DataMonsterError("Company must be specified for a fiscalQuarter aggregation")
-                if aggregation.company._id != company._id:
+                if aggregation.company.id != company.id:
                     raise DataMonsterError("Aggregating by the fiscal quarter of a different company not yet supported")
 
             if aggregation.period is not None:
                 params['aggregation'] = aggregation.period
 
-        url = '{}/{}/data?{}'.format(self.datasource_path, datasource._id, six.moves.urllib.parse.urlencode(params))
+        url = '{}/{}/data?{}'.format(self.datasource_path, datasource.id, six.moves.urllib.parse.urlencode(params))
         headers = {'Accept': 'avro/binary'}
         resp = self.client.get(url, headers)
 
