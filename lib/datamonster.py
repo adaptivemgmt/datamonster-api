@@ -29,13 +29,11 @@ class DataMonster(object):
         """Get the paginated results starting with this url"""
 
         next_page = url
-        results = []
         while next_page is not None:
             resp = self.client.get(next_page)
-            results += resp['results']
+            for result in resp['results']:
+                yield result
             next_page = resp['pagination']['nextPageURI']
-
-        return results
 
     def _check_param(self, company=None, datasource=None):
         if company is not None and not isinstance(company, Company):
@@ -84,7 +82,7 @@ class DataMonster(object):
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         companies = self._get_paginated_results(url)
-        return list(map(self._company_result_to_object, companies))
+        return six.moves.map(self._company_result_to_object, companies)
 
     def get_company_details(self, company_id):
         """Get details for the given company
@@ -123,7 +121,7 @@ class DataMonster(object):
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         datasources = self._get_paginated_results(url)
-        return list(map(self._datasource_result_to_object, datasources))
+        return six.moves.map(self._datasource_result_to_object, datasources)
 
     def get_datasource_by_id(self, datasource_id):
         """Given an ID, fill in a datasource"""

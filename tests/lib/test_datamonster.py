@@ -33,33 +33,33 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
     dm.client.get.reset_mock()
     companies = dm.get_companies()
 
+    assert_results_good(companies)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/company'
-    assert_results_good(companies)
 
     # text query, no datasource
     dm.client.get.reset_mock()
     companies = dm.get_companies(query='abc')
 
+    assert_results_good(companies)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/company?q=abc'
-    assert_results_good(companies)
 
     # no text query, datasource
     dm.client.get.reset_mock()
     companies = dm.get_companies(datasource=datasource)
 
+    assert_results_good(companies)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/company?datasourceId={}'.format(datasource.id)
-    assert_results_good(companies)
 
     # text query, datasource
     dm.client.get.reset_mock()
     companies = dm.get_companies(query='abc', datasource=datasource)
 
+    assert_results_good(companies)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/company?q=abc&datasourceId={}'.format(datasource.id)
-    assert_results_good(companies)
 
 
 def test_get_companies_2(mocker, dm, multi_page_company_results):
@@ -147,33 +147,33 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
     dm.client.get.reset_mock()
     datasources = dm.get_datasources()
 
+    assert_results_good(datasources)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/datasource'
-    assert_results_good(datasources)
 
     # ++ text query, no company
     dm.client.get.reset_mock()
     datasources = dm.get_datasources(query='abc')
 
+    assert_results_good(datasources)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?q=abc'
-    assert_results_good(datasources)
 
     # ++ no text query, company
     dm.client.get.reset_mock()
     datasources = dm.get_datasources(company=company)
 
+    assert_results_good(datasources)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?companyId={}'.format(company.id)
-    assert_results_good(datasources)
 
     # ++ text query, company
     dm.client.get.reset_mock()
     datasources = dm.get_datasources(query='abc', company=company)
 
+    assert_results_good(datasources)
     assert dm.client.get.call_count == 1
     assert dm.client.get.call_args[0][0] == '/rest/v1/datasource?q=abc&companyId={}'.format(company.id)
-    assert_results_good(datasources)
 
 
 def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
