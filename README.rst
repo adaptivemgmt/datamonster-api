@@ -14,27 +14,30 @@ Working with companies
         from lib.datamonster import DataMonster
         dm = DataMonster(<key_id>, <secret_key>)
 
-        print dm.get_companies(query='hd')          # Prints all companies whose name or ticker matches 'hd'
+        print(list(dm.get_companies(query='hd')))   # Prints all companies whose name or ticker matches 'hd'
 
         apple = dm.get_company_by_ticker('aapl')    # Creates a company object for apple
 
-        print apple.quarters[:5]                    # prints first 5 quarter end dates
-        print apple.datasources[:5]                 # prints the first 5 datasources that cover apple
+        print(apple.quarters[:5])                   # prints first 5 quarter end dates
+        print(list(apple.datasources)[:5])          # prints the first 5 datasources that cover apple
 
 
 Working with data sources
 
 .. code-block:: python
 
-        print dm.get_datasources(query='1010')      # Prints all data sources whose name or provider matches '1010'
+        print(list(dm.get_datasources(query='1010')))   # Prints all data sources whose name or provider matches '1010'
 
-        print dm.get_datasources(                   # Prints all data sources whose name or provider matches '1010'
-            query='1010',                           # AND also cover apple
-            company=apple)
+        print(list(                                     # Prints all data sources whose name or provider matches '1010'
+            dm.get_datasources(                         # AND also cover apple
+                query='1010',
+                company=apple)
+            )
+        )
 
-        datasource = dm.get_datasources(query='1010 Debit Sales Index')[0]
+        datasource = list(dm.get_datasources(query='1010 Debit Sales Index'))[0]
 
-        print datasource.companies[:5]              # Prints the first 5 companies covered by `1010 Debit Sales Index`
+        print(list(datasource.companies)[:5])          # Prints the first 5 companies covered by `1010 Debit Sales Index`
 
 
 Getting data
@@ -44,7 +47,8 @@ Getting data
         import datetime
         from lib.aggregation import Aggregation
 
-        datasource = apple.datasources[:5]          # Gets a datasource object
+        apple = dm.get_company_by_ticker('aapl')
+        datasource = next(apple.datasources)        # Gets a datasource object
         datasource.get_data(apple)                  # Gets all data for the datasource filtering on apple
 
         agg = Aggregation(period='fiscalQuarter', company=apple)
