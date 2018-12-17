@@ -7,11 +7,17 @@ This library eases the use of the Datamonster REST API from Python
 Quickstart
 ----------
 
+Installing Datamonster library
+
+.. code-block:: python
+
+        pip install datamonster_api
+
 Working with companies
 
 .. code-block:: python
 
-        from lib.datamonster import DataMonster
+        from datamonster_api import DataMonster
         dm = DataMonster(<key_id>, <secret_key>)
 
         print(list(dm.get_companies(query='hd')))   # Prints all companies whose name or ticker matches 'hd'
@@ -45,7 +51,7 @@ Getting data
 .. code-block:: python
 
         import datetime
-        from lib.aggregation import Aggregation
+        from datamonster_api import Aggregation
 
         apple = dm.get_company_by_ticker('aapl')
         datasource = next(apple.datasources)        # Gets a datasource object
