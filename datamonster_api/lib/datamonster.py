@@ -203,6 +203,9 @@ class DataMonster(object):
         records = [r for r in reader]
         df = pandas.DataFrame.from_records(records)
 
+        if len(df) == 0:
+            return df
+
         # Convert date columns to datetime64 columns
         df['upperDate'] = df['upperDate'].astype('datetime64[ns]')
         df['lowerDate'] = df['lowerDate'].astype('datetime64[ns]')
