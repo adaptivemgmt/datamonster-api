@@ -61,6 +61,18 @@ class DataMonster(object):
 
         raise DataMonsterError("Could not find company with ticker {}".format(ticker))
 
+    def get_company_by_id(self, company_id):
+        """Get a single company by id
+
+        :param company_id: company_id to search for
+
+        :returns: Single Company if any company matches the id.  Raises DatamonsterError otherwise.
+        """
+
+        company = self.get_company_details(company_id)
+        company['uri'] = self._get_company_path(company_id)
+        return self._company_result_to_object(company, has_details=True)
+
     def get_companies(self, query=None, datasource=None):
         """Get available companies
 
@@ -94,8 +106,21 @@ class DataMonster(object):
         path = '{}/{}'.format(self.company_path, company_id)
         return self.client.get(path)
 
-    def _company_result_to_object(self, company):
-        return Company(company['id'], company['ticker'], company['name'], company['uri'], self)
+    def _get_company_path(self, company_id):
+        return '{}/{}'.format(self.company_path, company_id)
+
+    def _company_result_to_object(self, company, has_details=False):
+        company_inst = Company(
+            company['id'],
+            company['ticker'],
+            company['name'],
+            company['uri'],
+            self
+        )
+
+        if has_details:
+            company_inst.set_details(company)
+        return company_inst
 
     ##############################################
     #           Datasource functions
