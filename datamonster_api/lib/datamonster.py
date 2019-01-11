@@ -103,7 +103,7 @@ class DataMonster(object):
         :returns: dictionary object with the company details
         """
 
-        path = '{}/{}'.format(self.company_path, company_id)
+        path = self._get_company_path(company_id)
         return self.client.get(path)
 
     def _get_company_path(self, company_id):
