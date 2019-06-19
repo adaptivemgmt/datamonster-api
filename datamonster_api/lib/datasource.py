@@ -29,8 +29,8 @@ class Datasource(BaseClass):
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
-    def get_splits(self, splits_filter=None):
-        """Get the splits for this data source. These are memoized per `splits_filter`.
+    def get_splits(self, split_filters=None):
+        """Get the splits for this data source. These are memoized per `split_filters`.
 
         :returns: (dict)
             for Oasis data fountains, a dict of all splits for this data fountain;
@@ -39,8 +39,8 @@ class Datasource(BaseClass):
         if not hasattr(self, '_splits'):
             self._splits = {}
         assert isinstance(self._splits, dict)
-        splits_filter_key = json.dumps(splits_filter)
-        if splits_filter_key not in self._splits or self.dm.always_query:
-            self._splits[splits_filter_key] = self.dm.get_splits_for_datasource(
-                self, splits_filter=splits_filter)
-        return self._splits[splits_filter_key]
+        split_filters_key = json.dumps(split_filters)
+        if split_filters_key not in self._splits or self.dm.always_query:
+            self._splits[split_filters_key] = self.dm.get_splits_for_datasource(
+                self, split_filters=split_filters)
+        return self._splits[split_filters_key]

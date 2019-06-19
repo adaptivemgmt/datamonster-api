@@ -259,10 +259,10 @@ class DataMonster(object):
     #---------------------------------------------
     #           Splits methods
     #---------------------------------------------
-    def get_splits_for_datasource(self, datasource, splits_filter=None):
+    def get_splits_for_datasource(self, datasource, split_filters=None):
         """Get splits for the data source (data fountain) `uuid`.
         :param datasource: an Oasis data fountain `Datasource`.
-        :param splits_filter: ((Dict[str, str] or None): a dict of key/value pairs to filter
+        :param split_filters: ((Dict[str, str] or None): a dict of key/value pairs to filter
                 splits by; both keys and values are `str`s.
                 Example:
                     {'salary_range': "< 10K",
@@ -276,9 +276,9 @@ class DataMonster(object):
         self._check_param(datasource=datasource)
 
         params = {}
-        if splits_filter:
-            self._check_splits_filter_param(splits_filter=splits_filter)
-            params['splits_filter'] = self._stringify(splits_filter)
+        if split_filters:
+            self._check_split_filters_param(split_filters=split_filters)
+            params['split_filters'] = self._stringify(split_filters)
 
         url = self._get_splits_path(uuid=datasource.id)
         if params:
@@ -289,13 +289,13 @@ class DataMonster(object):
         return splits
 
     @staticmethod
-    def _check_splits_filter_param(splits_filter):
+    def _check_split_filters_param(split_filters):
         if not (
-                isinstance(splits_filter, dict) and
-                all( isinstance(key, str) for key in iterkeys(splits_filter) ) and
-                all( isinstance(value, str) for value in itervalues(splits_filter) )
+                isinstance(split_filters, dict) and
+                all( isinstance(key, str) for key in iterkeys(split_filters) ) and
+                all( isinstance(value, str) for value in itervalues(split_filters) )
         ):
-            raise DataMonsterError("splits_filter argument must be a dict with str keys and values")
+            raise DataMonsterError("split_filters argument must be a dict with str keys and values")
 
     def _get_splits_path(self, uuid):
         return self.splits_path.format(uuid)
