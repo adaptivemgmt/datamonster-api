@@ -1,6 +1,8 @@
 import fastavro
 import pandas
 import six
+from six import iterkeys, itervalues
+import json
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -10,14 +12,14 @@ from .errors import DataMonsterError
 
 
 class DataMonster(object):
-    """Datamonster object. Main entry point to the library"""
+    """DataNonster object. Main entry point to the library"""
 
     company_path = '/rest/v1/company'
     datasource_path = '/rest/v1/datasource'
     splits_path = '/rest/v1/datasource/{}/splits'
 
     ##############################################
-    #           Generic functions
+    #           Generic methods
     ##############################################
     def __init__(self, key_id, secret, server=None, verify=True):
         """Must initialize with your key_id and secret"""
@@ -44,7 +46,7 @@ class DataMonster(object):
             raise DataMonsterError("datasource argument must be a Datasource object")
 
     ##############################################
-    #           Company functions
+    #           Company methods
     ##############################################
     def get_company_by_ticker(self, ticker):
         """Get a single company by ticker
@@ -124,8 +126,9 @@ class DataMonster(object):
         return company_inst
 
     ##############################################
-    #           Datasource functions
+    #           Datasource methods
     ##############################################
+
     def get_datasources(self, query=None, company=None):
         """Get available datasources
 
@@ -250,53 +253,46 @@ class DataMonster(object):
         return df
 
     #---------------------------------------------
-    #           Splits functions
+    #           Splits methods (one public)
     #---------------------------------------------
-    def get_splits(self, query=None, datasource=None):
-        """Get available companies
+    def get_splits_for_datasource(self, datasource, split_filters=None):
+        """Get splits for the data source (data fountain) `uuid`.
+        :param datasource: an Oasis data fountain `Datasource`.
+        :param split_filters: ((Dict[str, str] or None): a dict of key/value pairs to filter
+                splits by; both keys and values are `str`s.
+                Example:
+                    {'salary_range': "< 10K",
+                     'merchant_business_line': "Amazon",
+                     'Prime account_type': "Credit Card"}
 
-        :param query: Optional query that will restrict companies by ticker or name
-        :param datasource: Optional Datasource object that restricts companies to those covered by the given datasource
-
-        :returns: List of Company objects
+        :returns: (dict or None)
+            for Oasis data fountains, a dict of all splits for this data fountain;
+            for Legacy `Datasource`s, this method returns `None`.
         """
+        self._check_param(datasource=datasource)
 
         params = {}
-        if query:
-            params['q'] = query
-        if datasource:
-            self._check_param(datasource=datasource)
-            params['datasourceId'] = datasource.id
+        if split_filters:
+            self._check_split_filters_param(split_filters=split_filters)
+            params['split_filters'] = datasource.id
 
-        url = self.company_path
+        url = self._get_splits_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
-        companies = self._get_paginated_results(url)
-        return six.moves.map(self._company_result_to_object, companies)
+        resp = self.client.get(url)
+        # No need to serialize/paginate
+        splits = json.loads(resp)
+        return splits
 
-    def get_company_details(self, company_id):
-        """Get details for the given company
+    @staticmethod
+    def _check_split_filters_param(split_filters):
+        if not (
+                isinstance(split_filters, dict) and
+                all( isinstance(key, str) for key in iterkeys(split_filters) ) and
+                all( isinstance(value, str) for value in itervalues(split_filters) )
+        ):
+            raise DataMonsterError("split_filters argument must be a dict with string keys and string values")
 
-        :param company_id: The ID of the company for which we get the details
-        :returns: dictionary object with the company details
-        """
-
-        path = self._get_company_path(company_id)
-        return self.client.get(path)
-
-    def _get_company_path(self, company_id):
-        return '{}/{}'.format(self.company_path, company_id)
-
-    def _company_result_to_object(self, company, has_details=False):
-        company_inst = Company(
-            company['id'],
-            company['ticker'],
-            company['name'],
-            company['uri'],
-            self
-        )
-
-        if has_details:
-            company_inst.set_details(company)
-        return company_inst
+    def _get_splits_path(self, uuid):
+        return self.splits_path.format(uuid)

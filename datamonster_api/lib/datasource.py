@@ -32,18 +32,14 @@ class Datasource(BaseClass):
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
-
-# ##### Provisional / ideas:
-    @property
-    def splits(self):
+    def get_splits(self, split_filters=None):
         """Get the (memoized) splits for this data source.
 
-        Returns (dict or None):
-            for Oasis data fountains, a dict of all splits for this data fountain.
-            For Legacy `Datasource`s, this method returns `None`.
+        :returns: (dict or None)
+            for Oasis data fountains, a dict of all splits for this data fountain;
+            for Legacy `Datasource`s, this method returns `None`.
         """
-
-        if not hasattr(self, '_companies'):
-            self._splits = self.dm.get_splits(datasource=self)
-
+        if not hasattr(self, '_splits'):
+            self._splits = self.dm.get_splits_for_datasource(self,
+                                                             split_filters=split_filters)
         return self._splits
