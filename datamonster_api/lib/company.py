@@ -20,7 +20,7 @@ class Company(BaseClass):
     def datasources(self):
         """Get the data sources for this company"""
 
-        if not hasattr(self, '_datasources'):
+        if not hasattr(self, '_datasources') or self.dm.always_query:
             self._datasources = self.dm.get_datasources(company=self)
 
         return self._datasources
