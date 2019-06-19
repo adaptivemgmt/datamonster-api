@@ -14,6 +14,7 @@ class DataMonster(object):
 
     company_path = '/rest/v1/company'
     datasource_path = '/rest/v1/datasource'
+    splits_path = '/rest/v1/datasource/{}/splits'
 
     ##############################################
     #           Generic functions
@@ -247,3 +248,55 @@ class DataMonster(object):
         del df['lowerDate']
 
         return df
+
+    #---------------------------------------------
+    #           Splits functions
+    #---------------------------------------------
+    def get_splits(self, query=None, datasource=None):
+        """Get available companies
+
+        :param query: Optional query that will restrict companies by ticker or name
+        :param datasource: Optional Datasource object that restricts companies to those covered by the given datasource
+
+        :returns: List of Company objects
+        """
+
+        params = {}
+        if query:
+            params['q'] = query
+        if datasource:
+            self._check_param(datasource=datasource)
+            params['datasourceId'] = datasource.id
+
+        url = self.company_path
+        if params:
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
+
+        companies = self._get_paginated_results(url)
+        return six.moves.map(self._company_result_to_object, companies)
+
+    def get_company_details(self, company_id):
+        """Get details for the given company
+
+        :param company_id: The ID of the company for which we get the details
+        :returns: dictionary object with the company details
+        """
+
+        path = self._get_company_path(company_id)
+        return self.client.get(path)
+
+    def _get_company_path(self, company_id):
+        return '{}/{}'.format(self.company_path, company_id)
+
+    def _company_result_to_object(self, company, has_details=False):
+        company_inst = Company(
+            company['id'],
+            company['ticker'],
+            company['name'],
+            company['uri'],
+            self
+        )
+
+        if has_details:
+            company_inst.set_details(company)
+        return company_inst
