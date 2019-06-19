@@ -1,8 +1,7 @@
 import fastavro
 import pandas
 import six
-from six import iterkeys, itervalues
-import json
+from six import iterkeys, itervalues, iteritems
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -27,6 +26,7 @@ class DataMonster(object):
         self.client = Client(key_id, secret, server, verify)
         self.key_id = key_id
         self.secret = secret
+        self._always_query = False
 
     def _get_paginated_results(self, url):
         """Get the paginated results starting with this url"""
@@ -44,6 +44,14 @@ class DataMonster(object):
 
         if datasource is not None and not isinstance(datasource, Datasource):
             raise DataMonsterError("datasource argument must be a Datasource object")
+
+    @property
+    def always_query(self):
+        return self._always_query
+
+    @always_query.setter
+    def always_query(self, value):
+        self._always_query = value
 
     ##############################################
     #           Company methods
@@ -84,7 +92,6 @@ class DataMonster(object):
 
         :returns: List of Company objects
         """
-
         params = {}
         if query:
             params['q'] = query
@@ -105,7 +112,6 @@ class DataMonster(object):
         :param company_id: The ID of the company for which we get the details
         :returns: dictionary object with the company details
         """
-
         path = self._get_company_path(company_id)
         return self.client.get(path)
 
@@ -137,7 +143,6 @@ class DataMonster(object):
 
         :returns: List of Datasource objects
         """
-
         params = {}
         if query:
             params['q'] = query
@@ -204,7 +209,6 @@ class DataMonster(object):
         :param datasource_id: The ID of the datasource for which we get the details
         :returns: dictionary object with the datasource details
         """
-
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
 
@@ -253,12 +257,12 @@ class DataMonster(object):
         return df
 
     #---------------------------------------------
-    #           Splits methods (one public)
+    #           Splits methods
     #---------------------------------------------
-    def get_splits_for_datasource(self, datasource, split_filters=None):
+    def get_splits_for_datasource(self, datasource, splits_filter=None):
         """Get splits for the data source (data fountain) `uuid`.
         :param datasource: an Oasis data fountain `Datasource`.
-        :param split_filters: ((Dict[str, str] or None): a dict of key/value pairs to filter
+        :param splits_filter: ((Dict[str, str] or None): a dict of key/value pairs to filter
                 splits by; both keys and values are `str`s.
                 Example:
                     {'salary_range': "< 10K",
@@ -272,27 +276,42 @@ class DataMonster(object):
         self._check_param(datasource=datasource)
 
         params = {}
-        if split_filters:
-            self._check_split_filters_param(split_filters=split_filters)
-            params['split_filters'] = datasource.id
+        if splits_filter:
+            self._check_splits_filter_param(splits_filter=splits_filter)
+            params['splits_filter'] = self._stringify(splits_filter)
 
         url = self._get_splits_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
-        resp = self.client.get(url)
-        # No need to serialize/paginate
-        splits = json.loads(resp)
+        splits = self.client.get(url)
+        # nÎo need to serialize/paginate
         return splits
 
     @staticmethod
-    def _check_split_filters_param(split_filters):
+    def _check_splits_filter_param(splits_filter):
         if not (
-                isinstance(split_filters, dict) and
-                all( isinstance(key, str) for key in iterkeys(split_filters) ) and
-                all( isinstance(value, str) for value in itervalues(split_filters) )
+                isinstance(splits_filter, dict) and
+                all( isinstance(key, str) for key in iterkeys(splits_filter) ) and
+                all( isinstance(value, str) for value in itervalues(splits_filter) )
         ):
-            raise DataMonsterError("split_filters argument must be a dict with string keys and string values")
+            raise DataMonsterError("splits_filter argument must be a dict with str keys and values")
 
     def _get_splits_path(self, uuid):
         return self.splits_path.format(uuid)
+
+    @staticmethod
+    def _stringify(dict_str_str):
+        """
+        :param dict_str_str: Dict[str, str], no key or value containing ':' or ';'
+        :return: str version of dict_str_str.
+
+        Given dict_str_str = {'a': 'x', '  a b c  ': '  y  '},
+        return value is "a: x; a b c: y", which the REST endpoint's _dictify method
+        converts to the dict {'a': 'x', 'a b c': 'y'}
+        (all keys and values are `.strip()`ped
+        """
+        return '; '.join(
+            '{}: {}'.format(item[0].strip(), item[1].strip())
+            for item in iteritems(dict_str_str)
+        )
