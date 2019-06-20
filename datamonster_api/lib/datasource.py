@@ -19,9 +19,7 @@ class Datasource(BaseClass):
     def companies(self):
         """Return the (memoized) companies for this data source.
         """
-        # NOTE: corrected & upgraded the docstring. -BTO
-
-        if not hasattr(self, '_companies') or self.dm.always_query:
+        if not hasattr(self, '_companies'):
             self._companies = self.dm.get_companies(datasource=self)
 
         return self._companies
@@ -40,7 +38,7 @@ class Datasource(BaseClass):
             self._splits = {}
         assert isinstance(self._splits, dict)
         filters_key = json.dumps(filters)
-        if filters_key not in self._splits or self.dm.always_query:
+        if filters_key not in self._splits:
             self._splits[filters_key] = self.dm.get_splits_for_datasource(
                 self, filters=filters)
         return self._splits[filters_key]

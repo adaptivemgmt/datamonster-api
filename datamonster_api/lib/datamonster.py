@@ -12,7 +12,7 @@ from .errors import DataMonsterError
 
 
 class DataMonster(object):
-    """Datamonster object. Main entry point to the library"""
+    """DataMonster object. Main entry point to the library"""
 
     company_path = '/rest/v1/company'
     datasource_path = '/rest/v1/datasource'
@@ -27,7 +27,6 @@ class DataMonster(object):
         self.client = Client(key_id, secret, server, verify)
         self.key_id = key_id
         self.secret = secret
-        self._always_query = False
 
     def _get_paginated_results(self, url):
         """Get the paginated results starting with this url"""
@@ -46,17 +45,10 @@ class DataMonster(object):
         if datasource is not None and not isinstance(datasource, Datasource):
             raise DataMonsterError("datasource argument must be a Datasource object")
 
-    @property
-    def always_query(self):
-        return self._always_query
-
-    @always_query.setter
-    def always_query(self, value):
-        self._always_query = value
-
     ##############################################
     #           Company methods
     ##############################################
+
     def get_company_by_ticker(self, ticker):
         """Get a single company by ticker
 
@@ -64,7 +56,6 @@ class DataMonster(object):
 
         :returns: Single Company object if any companies exactly match the ticker.  Raises DatamonsterError otherwise.
         """
-
         ticker = ticker.lower()
         companies = self.get_companies(ticker)
         for company in companies:
@@ -80,7 +71,6 @@ class DataMonster(object):
 
         :returns: Single Company if any company matches the id.  Raises DatamonsterError otherwise.
         """
-
         company = self.get_company_details(company_id)
         company['uri'] = self._get_company_path(company_id)
         return self._company_result_to_object(company, has_details=True)
@@ -93,7 +83,6 @@ class DataMonster(object):
 
         :returns: List of Company objects
         """
-
         params = {}
         if query:
             params['q'] = query
@@ -211,7 +200,6 @@ class DataMonster(object):
         :param datasource_id: The ID of the datasource for which we get the details
         :returns: dictionary object with the datasource details
         """
-
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
 
