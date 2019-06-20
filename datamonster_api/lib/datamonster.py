@@ -2,6 +2,7 @@ import fastavro
 import pandas
 import six
 from six import iterkeys, itervalues, iteritems
+import json
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -285,33 +286,49 @@ class DataMonster(object):
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         splits = self.client.get(url)
-        # nÎo need to serialize/paginate
+        # No need to serialize/paginate
         return splits
 
     @staticmethod
     def _check_split_filters_param(split_filters):
+        """
+        :param split_filters: w/e
+        :return: None
+        Raises DataMonsterError if split_filters is not a dict with only str keys,
+        or if any of its values can't be json-encoded
+        """
         if not (
                 isinstance(split_filters, dict) and
-                all( isinstance(key, str) for key in iterkeys(split_filters) ) and
-                all( isinstance(value, str) for value in itervalues(split_filters) )
+                all( isinstance(key, str) for key in iterkeys(split_filters) )
         ):
-            raise DataMonsterError("split_filters argument must be a dict with str keys and values")
+            raise DataMonsterError("split_filters argument must be a dict with str keys")
+
+        for value in itervalues(split_filters):
+            try:
+                json.dumps(value)
+            except:
+                raise DataMonsterError(
+                    "value '{}' in split_filters can't be encoded as json".format(value)
+                )
 
     def _get_splits_path(self, uuid):
         return self.splits_path.format(uuid)
 
     @staticmethod
-    def _stringify(dict_str_str):
+    def _stringify(dict_w_str_keys):
         """
-        :param dict_str_str: Dict[str, str], no key or value containing ':' or ';'
-        :return: str version of dict_str_str.
+        :param dict_w_str_keys: Dict[str, T], no key or containing ':' or ';'
+            where values of type(s) T must be json-encodable.
+        :return: str version of dict_w_str_keys.
 
-        Given dict_str_str = {'a': 'x', '  a b c  ': '  y  '},
-        return value is "a: x; a b c: y", which the REST endpoint's _dictify method
-        converts to the dict {'a': 'x', 'a b c': 'y'}
-        (all keys and values are `.strip()`ped
+        All keys and str values are `.strip()`ped
         """
+        def strip_if_str(x):
+            return x.strip() if isinstance(x, str) else x
+
         return '; '.join(
-            '{}: {}'.format(item[0].strip(), item[1].strip())
-            for item in iteritems(dict_str_str)
+            '{}: {}'.format(item[0].strip(),
+                            json.dumps(strip_if_str(item[1]))
+                            )
+            for item in iteritems(dict_w_str_keys)
         )
