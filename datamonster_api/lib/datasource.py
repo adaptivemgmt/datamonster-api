@@ -1,3 +1,4 @@
+import json
 from .base import BaseClass
 
 
@@ -20,11 +21,7 @@ class Datasource(BaseClass):
         """
         # NOTE: corrected & upgraded the docstring. -BTO
 
-        # TODO: What if the memoized data, here & for splits, gets stale?
-        #       However uncommon that might be.
-        # todo: Perhaps offer a way to "clear the cache", force a refetch?
-
-        if not hasattr(self, '_companies'):
+        if not hasattr(self, '_companies') or self.dm.always_query:
             self._companies = self.dm.get_companies(datasource=self)
 
         return self._companies
@@ -32,14 +29,18 @@ class Datasource(BaseClass):
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
-    def get_splits(self, split_filters=None):
-        """Get the (memoized) splits for this data source.
+    def get_splits(self, filters=None):
+        """Get the splits for this data source. These are memoized per `filters`.
 
-        :returns: (dict or None)
+        :returns: (dict)
             for Oasis data fountains, a dict of all splits for this data fountain;
-            for Legacy `Datasource`s, this method returns `None`.
+            for Legacy `Datasource`s, this method returns {}.
         """
         if not hasattr(self, '_splits'):
-            self._splits = self.dm.get_splits_for_datasource(self,
-                                                             split_filters=split_filters)
-        return self._splits
+            self._splits = {}
+        assert isinstance(self._splits, dict)
+        filters_key = json.dumps(filters)
+        if filters_key not in self._splits or self.dm.always_query:
+            self._splits[filters_key] = self.dm.get_splits_for_datasource(
+                self, filters=filters)
+        return self._splits[filters_key]

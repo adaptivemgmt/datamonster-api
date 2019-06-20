@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.3.0",
     author="Kevin Thompson",
     author_email="kevin@adaptivemgmt.com",
-    description="Library for accessing the datamonster rest API",
+    description="Library for accessing the Datamonster REST API",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/adaptivemgmt/datamonster-api",
