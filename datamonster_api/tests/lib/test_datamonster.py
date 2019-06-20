@@ -3,8 +3,7 @@ import pytest
 
 from six.moves.urllib.parse import urlparse, parse_qs
 
-from lib.errors import DataMonsterError
-from lib.aggregation import Aggregation
+from datamonster_api import Aggregation, DataMonsterError
 
 
 ##############################################

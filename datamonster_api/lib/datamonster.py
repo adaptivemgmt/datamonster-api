@@ -260,10 +260,10 @@ class DataMonster(object):
     #---------------------------------------------
     #           Splits methods
     #---------------------------------------------
-    def get_splits_for_datasource(self, datasource, split_filters=None):
+    def get_splits_for_datasource(self, datasource, filters=None):
         """Get splits for the data source (data fountain) `uuid`.
         :param datasource: an Oasis data fountain `Datasource`.
-        :param split_filters: ((Dict[str, str] or None): a dict of key/value pairs to filter
+        :param filters: ((Dict[str, str] or None): a dict of key/value pairs to filter
                 splits by; both keys and values are `str`s.
                 Example:
                     {'salary_range': "< 10K",
@@ -277,38 +277,38 @@ class DataMonster(object):
         self._check_param(datasource=datasource)
 
         params = {}
-        if split_filters:
-            self._check_split_filters_param(split_filters=split_filters)
-            params['split_filters'] = self._stringify(split_filters)
+        if filters:
+            self._check_filters_param(filters=filters)
+            params['filters'] = self._stringify(filters)
 
         url = self._get_splits_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         splits = self.client.get(url)
-        # No need to serialize/paginate
+        # No need to serialization/pagination
         return splits
 
     @staticmethod
-    def _check_split_filters_param(split_filters):
+    def _check_filters_param(filters):
         """
-        :param split_filters: w/e
+        :param filters: w/e
         :return: None
-        Raises DataMonsterError if split_filters is not a dict with only str keys,
+        Raises DataMonsterError if filters is not a dict with only str keys,
         or if any of its values can't be json-encoded
         """
         if not (
-                isinstance(split_filters, dict) and
-                all( isinstance(key, str) for key in iterkeys(split_filters) )
+                isinstance(filters, dict) and
+                all( isinstance(key, str) for key in iterkeys(filters) )
         ):
-            raise DataMonsterError("split_filters argument must be a dict with str keys")
+            raise DataMonsterError("filters argument must be a dict with str keys")
 
-        for value in itervalues(split_filters):
+        for value in itervalues(filters):
             try:
                 json.dumps(value)
             except:
                 raise DataMonsterError(
-                    "value '{}' in split_filters can't be encoded as json".format(value)
+                    "value '{}' in filters can't be encoded as json".format(value)
                 )
 
     def _get_splits_path(self, uuid):

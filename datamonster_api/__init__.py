@@ -10,3 +10,6 @@ from .lib.aggregation import Aggregation    # noqa
 # But Client is not so exposed.
 from .lib.company import Company            # noqa
 from .lib.datasource import Datasource      # noqa
+
+# And finally, as a convenience,
+from .lib.errors import DataMonsterError

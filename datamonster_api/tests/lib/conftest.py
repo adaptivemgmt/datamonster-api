@@ -1,9 +1,7 @@
 import os
 import pytest
 
-from lib.company import Company
-from lib.datamonster import DataMonster
-from lib.datasource import Datasource
+from datamonster_api import DataMonster, Company, Datasource
 
 
 @pytest.fixture
