@@ -14,13 +14,22 @@ class Company(BaseClass):
         self.dm = dm
 
     def get_details(self):
+        """Get details (metadata) for this company
+        """
         return self.dm.get_company_details(self.id)
 
     @property
     def datasources(self):
-        """Get the data sources for this company"""
-
+        """Get the data sources for this company
+        """
         if not hasattr(self, '_datasources'):
             self._datasources = self.dm.get_datasources(company=self)
 
         return self._datasources
+
+    @property
+    def pk(self):
+        """
+        :return: (int) the primary key (pk)
+        """
+        return int(self.id)

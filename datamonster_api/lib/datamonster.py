@@ -9,6 +9,7 @@ from .client import Client
 from .company import Company
 from .datasource import Datasource
 from .errors import DataMonsterError
+from .utils import summarize_splits_dict
 
 
 class DataMonster(object):
@@ -155,7 +156,7 @@ class DataMonster(object):
         return self._datasource_result_to_object(datasource, has_details=True)
 
     def get_data(self, datasource, company, aggregation=None, start_date=None, end_date=None):
-        """Get available datasources
+        """Get data for datasource.
 
         :param datasource: Datasource object to get the data for
         :param company: Company object to filter the datasource on
@@ -195,7 +196,7 @@ class DataMonster(object):
         return self._avro_to_df(resp)
 
     def get_datasource_details(self, datasource_id):
-        """Get details for the given datasource
+        """Get details (metadata) for the given datasource
 
         :param datasource_id: The ID of the datasource for which we get the details
         :returns: dictionary object with the datasource details
@@ -220,8 +221,8 @@ class DataMonster(object):
         return ds_inst
 
     def _avro_to_df(self, avro_buffer):
-        """Read an avro structure into a dataframe"""
-
+        """Read an avro structure into a dataframe
+        """
         fp = six.BytesIO(avro_buffer)
         reader = fastavro.reader(fp)
         records = [r for r in reader]
@@ -251,9 +252,9 @@ class DataMonster(object):
     #           Splits methods
     #---------------------------------------------
     def get_splits_for_datasource(self, datasource, filters=None):
-        """Get splits for the data source (data fountain) `uuid`.
+        """Get splits for the data source (data fountain).
         :param datasource: an Oasis data fountain `Datasource`.
-        :param filters: ((Dict[str, str] or None): a dict of key/value pairs to filter
+        :param filters: ((Dict[str, T] or None): a dict of key/value pairs to filter
                 splits by; both keys and values are `str`s.
                 Example:
                     {'salary_range': "< 10K",
@@ -263,62 +264,87 @@ class DataMonster(object):
         :returns: (dict or None)
             for Oasis data fountains, a dict of all splits for this data fountain;
             for Legacy `Datasource`s, this method returns `None`.
+        :raises: re-raises `DataMonsterError` if self.client.get() raises that
         """
         self._check_param(datasource=datasource)
 
         params = {}
         if filters:
-            self._check_filters_param(filters=filters)
-            params['filters'] = self._stringify(filters)
+            self.check_filters_param(filters=filters)
+            params['filters'] = json.dumps(filters)         # self._stringify(filters)
 
         url = self._get_splits_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
+        # Let DataMonsterError from self.client.get() happen -- we don't occlude these
         splits = self.client.get(url)
-        # No need to serialization/pagination
+        # No serialization/pagination
         return splits
 
+    # def get_splits_for_datasource_and_company(self, datasource, company):
+    #     return datasource.get_splits(filters={'section_pk': int(company.id)})
+
     @staticmethod
-    def _check_filters_param(filters):
+    def check_filters_param(filters):
         """
+        Not "private" because Datasource.get_splits() uses it too
+
         :param filters: w/e
         :return: None
-        Raises DataMonsterError if filters is not a dict with only str keys,
+        :raises: DataMonsterError if filters is not a dict with only str keys,
         or if any of its values can't be json-encoded
         """
-        if not (
-                isinstance(filters, dict) and
-                all( isinstance(key, str) for key in iterkeys(filters) )
-        ):
-            raise DataMonsterError("filters argument must be a dict with str keys")
+        try:
+            json.dumps(filters)
+        except:
+            for key, value in iteritems(filters):
+                # Encodable Python keys must be of a basic type
+                try:
+                    json.dumps(key)
+                except TypeError:
+                    raise DataMonsterError(
+                        "`filters` problem when getting splits: "
+                        "key '{}' can't be json-encoded - "
+                        "keys must be one of the basic types "
+                        "(str, unicode, int, long, float, bool, None)"
+                            .format(value))
 
-        for value in itervalues(filters):
-            try:
-                json.dumps(value)
-            except:
-                raise DataMonsterError(
-                    "value '{}' in filters can't be encoded as json".format(value)
-                )
+                # Check value
+                try:
+                    json.dumps(value)
+                except:
+                    raise DataMonsterError(
+                        "`filters` problem when getting splits: "
+                        "value '{}' of key '{}' can't be json-encoded"
+                            .format(value, key))
+                else:
+                    # outer try raised, but no key or value did.
+                    # Implausible; re-raise
+                    raise DataMonsterError("problem when getting splits: "
+                                           "`filters` dict can't be json-encoded")
 
     def _get_splits_path(self, uuid):
         return self.splits_path.format(uuid)
 
-    @staticmethod
-    def _stringify(dict_w_str_keys):
-        """
-        :param dict_w_str_keys: Dict[str, T], no key or containing ':' or ';'
-            where values of type(s) T must be json-encodable.
-        :return: str version of dict_w_str_keys.
+    def get_splits_summary_for_datasource(self, datasource, filters=None):
+        """Return a dict summarizing the splits that would be returned by
+            `get_splits_for_datasource(datasource, filters=filters)`
 
-        All keys and str values are `.strip()`ped
-        """
-        def strip_if_str(x):
-            return x.strip() if isinstance(x, str) else x
+        :param datasource: a `Datasource`
+        :param company: a dict, as for `get_splits_for_datasource`
 
-        return '; '.join(
-            '{}: {}'.format(item[0].strip(),
-                            json.dumps(strip_if_str(item[1]))
-                            )
-            for item in iteritems(dict_w_str_keys)
-        )
+        :return: a dict of the form
+            { 'split_count': N,
+              'columns': { split_col_name_0: set_of_values_for_this_col,
+                            ...
+                           split_col_name_i: set_of_values_for_this_col,
+                           ...
+                           'section_pk': {section_pk, ...}
+                           ...
+                         }
+            }
+        """
+        # Use version without cacheing/memoizing, not datasource.get_splits(filters=filters)
+        splits = self.get_splits_for_datasource(datasource, filters=filters)
+        return summarize_splits_dict(splits)
