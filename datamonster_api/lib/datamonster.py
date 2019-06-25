@@ -305,7 +305,7 @@ class DataMonster(object):
         """
         try:
             json.dumps(filters)
-        except:
+        except Exception as e:
             for key, value in iteritems(filters):
                 # Encodable Python keys must be of a basic type
                 try:
@@ -331,6 +331,13 @@ class DataMonster(object):
                     # Implausible; re-raise
                     raise DataMonsterError("problem when getting splits: "
                                            "`filters` dict can't be json-encoded")
+
+            # `filters` could NOT be JSON-serialized/-encoded,
+            # but no particular key or value was a problem
+            raise DataMonsterError(
+                "Unexpected problem with `filters` argument: {} -- {}".format(
+                    type(e).__name__, str(e))
+            )
 
     def _get_splits_path(self, uuid):
         return self.splits_path.format(uuid)
