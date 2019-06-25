@@ -68,13 +68,22 @@ class DataMonster(object):
     def get_company_by_id(self, company_id):
         """Get a single company by id
 
-        :param company_id: company_id to search for
+        :param company_id: (str) company_id to search for, str form of pk, e.g. '718'
 
         :returns: Single Company if any company matches the id.  Raises DatamonsterError otherwise.
         """
         company = self.get_company_details(company_id)
         company['uri'] = self._get_company_path(company_id)
         return self._company_result_to_object(company, has_details=True)
+
+    def get_company_by_pk(self, company_pk):
+        """Get a single company by pk
+
+        :param company_pk: (int) pk to search for
+
+        :returns: Single Company if any company has this pk.  Raises DatamonsterError otherwise.
+        """
+        return self.get_company_by_id(str(company_pk))
 
     def get_companies(self, query=None, datasource=None):
         """Get available companies
@@ -292,8 +301,7 @@ class DataMonster(object):
 
         :param filters: w/e
         :return: None
-        :raises: DataMonsterError if filters is not a dict with only str keys,
-        or if any of its values can't be json-encoded
+        :raises: DataMonsterError if filters isn't JSON-serializable
         """
         try:
             json.dumps(filters)
@@ -305,7 +313,7 @@ class DataMonster(object):
                 except TypeError:
                     raise DataMonsterError(
                         "`filters` problem when getting splits: "
-                        "key '{}' can't be json-encoded - "
+                        "key '{}' can't be JSON-serialized - "
                         "keys must be one of the basic types "
                         "(str, unicode, int, long, float, bool, None)"
                             .format(value))
@@ -316,7 +324,7 @@ class DataMonster(object):
                 except:
                     raise DataMonsterError(
                         "`filters` problem when getting splits: "
-                        "value '{}' of key '{}' can't be json-encoded"
+                        "value '{}' of key '{}' can't be JSON-serialized"
                             .format(value, key))
                 else:
                     # outer try raised, but no key or value did.

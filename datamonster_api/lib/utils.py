@@ -1,5 +1,9 @@
-# Functions for internal use, not exposed to users/documented/"exported" in ../__init__.py
-# Prefixing them with '_' causes Pycharm and flake8 warnings.
+__doc__ = """\
+Functions for internal use -- not exposed to users, not documented, not "exported"
+in ../__init__.py.
+Prefixing any of these with '_' causes Pycharm and flake8 warnings.
+"""
+from collections import defaultdict
 
 def summarize_splits_dict(splits):
     """

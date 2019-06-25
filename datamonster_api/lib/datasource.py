@@ -58,7 +58,7 @@ class Datasource(BaseClass):
         :params kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
         :return: splits dict, filtered as requested
         :raises: can raise DataMonsterError if company is not of an expected type,
-            or if some kwarg item is not json-encodable
+            or if some kwarg item is not JSON-serializable
         """
         filters = kwargs
         if company:
@@ -71,7 +71,7 @@ class Datasource(BaseClass):
                     if not isinstance(c, Company):
                         raise DataMonsterError(
                             'company argument must be a company or a sequence of companies')
-                    company_list.append(c)
+                    company_list.append(c.pk)
                 filters['section_pk'] = company_list
 
         # Now do the deed, and memoize
@@ -81,7 +81,7 @@ class Datasource(BaseClass):
 
         try:
             filters_key = json.dumps(filters)
-        except:
+        except Exception as e:
             self.dm.check_filters_param(filters)    # will raise
 
         if filters_key not in self._splits:
@@ -117,7 +117,7 @@ class Datasource(BaseClass):
                          }
             }
         :raises: can raise DataMonsterError if company is not of an expected type,
-            or if some kwarg item is not json-encodable
+            or if some kwarg item is not JSON-serializable
         """
-        splits = self.get_splits(self, company=company, **kwargs)
+        splits = self.get_splits(company=company, **kwargs)
         return summarize_splits_dict(splits)
