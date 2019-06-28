@@ -261,7 +261,10 @@ class DataMonster(object):
     ##############################################
 
     def get_dimensions_for_datasource(self, datasource, filters=None):
-        """Get dimensions ("splits") for the data source (data fountain).
+        """Get dimensions ("splits") for the data source (data fountain)
+        from the DataMonster REST endpoint '/datasource/<uuid>/dimensions?filters=...
+        where the filters string is optional.
+
         :param datasource: an Oasis data fountain `Datasource`.
         :param filters: ((Dict[str, T] or None): a dict of key/value pairs to filter
                 dimensions by; both keys and values are `str`s.
