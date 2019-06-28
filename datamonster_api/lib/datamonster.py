@@ -9,7 +9,6 @@ from .client import Client
 from .company import Company
 from .datasource import Datasource
 from .errors import DataMonsterError
-from .utils import summarize_splits_dict
 
 
 class DataMonster(object):
@@ -279,87 +278,109 @@ class DataMonster(object):
 
         params = {}
         if filters:
-            self.check_filters_param(filters=filters)
-            params['filters'] = json.dumps(filters)         # self._stringify(filters)
+            params['filters'] = self.to_json_checked(filters)
 
         url = self._get_splits_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         # Let DataMonsterError from self.client.get() happen -- we don't occlude these
-        splits = self.client.get(url)
-        # No serialization/pagination
-        return splits
+        # splits_from_oasis = self.client.get(url)
+        split_results = self._get_paginated_results(url)
+        return six.moves.map(self._split_result_pks_to_tickers, split_results)
 
-    # def get_splits_for_datasource_and_company(self, datasource, company):
-    #     return datasource.get_splits(filters={'section_pk': int(company.id)})
+    def _split_result_pks_to_tickers(self, result):
+        """
+        :param result: a split dict, with keys
+            'split_combination'
+            'max_date'
+            'min_date'
+            'row_count'
+        :return: the dict, mutated:
+            if 'section_pk' in result['split_combination'], its value
+                result['split_combination']['section_pk"]
+            is a list of section_pk's (though we acommodate a single pk or None);
+            we replace each pk with self._pk_to_ticker(pk)
+        """
+        combo = result['split_combination']
+        if 'section_pk' in combo:
+            value = combo.pop('section_pk')
+            if value is not None:
+                combo['ticker'] = (
+                    self._pk_to_ticker(value)
+                    if isinstance(value, int) else
+                    six.moves.map(self._pk_to_ticker, value)    # isinstance(value, list) -- List[int] in fact
+                )
+        return result
+
+    def _pk_to_ticker(self, pk):
+        """
+        :param pk: int -- a section_pk
+        :return: str --
+                dm.get_company_from_pk(pk).ticker   if that is not None,
+                str(pk) + '-NO_TICKER'              otherwise (ticker is None)
+        """
+        ticker = self.get_company_by_pk(pk).ticker
+        if not ticker:
+            ticker = str(pk) + '-NO_TICKER'
+        return ticker
 
     @staticmethod
-    def check_filters_param(filters):
+    def to_json_checked(filters):
         """
         Not "private" because Datasource.get_splits() uses it too
 
-        :param filters: w/e
-        :return: None
-        :raises: DataMonsterError if filters isn't JSON-serializable
+        :param filters: dict
+        :return: JSON string encoding `filters`, the normal exit if filters is
+            JSON-serializable and satisfies the following conditions:
+            -- `filters` has all string keys (six.text_type), and
+            -- for every key in filters,
+                    where T = int
+                              if key == 'section_pk" else
+                              six.text_type,
+               filters[key] is of type T
+               OR
+               it's a list of T
+               (OR it's None)
+
+        These conditions ensure that `filters` is, at least in theory, JSON-serializable,
+        which it prrrrobably is, unless other issues obtain, e.g. it's enormous.
+
+        :raises: DataMonsterError if the conditions just described don't hold.
+            We try to provide an informative error messages.
         """
+        for key, value in iteritems(filters):
+            # keys must be strings
+            if not isinstance(key, six.text_type):
+                raise DataMonsterError(
+                    "`filters` problem when getting splits: "
+                    "key '{}' is not a string."
+                        .format(key))
+
+            # Check value: if key == 'section_pk', value must be let's say list of int,
+            # or (being lenient) an int or None. If key != 'section_pk', value must be
+            # a string or list of strings (or None)
+            type_ = int if key == 'section_pk' else six.text_type
+            if not (value is None or
+                    isinstance(value, type_) or
+                    (isinstance(value, list) and
+                     all(isinstance(elt, type_) for elt in value))
+            ):
+                type_name = type_.__name__
+                raise DataMonsterError(
+                    "`filters` problem when getting splits: "
+                    "value '{}' of key '{}' must be a {} or list of {}s or None"
+                        .format(value, key, type_name, type_name))
+        #
         try:
-            json.dumps(filters)
+            return json.dumps(filters)
         except Exception as e:
-            for key, value in iteritems(filters):
-                # Encodable Python keys must be of a basic type
-                try:
-                    json.dumps(key)
-                except TypeError:
-                    raise DataMonsterError(
-                        "`filters` problem when getting splits: "
-                        "key '{}' can't be JSON-serialized - "
-                        "keys must be one of the basic types "
-                        "(str, unicode, int, long, float, bool, None)"
-                            .format(value))
-
-                # Check value
-                try:
-                    json.dumps(value)
-                except:
-                    raise DataMonsterError(
-                        "`filters` problem when getting splits: "
-                        "value '{}' of key '{}' can't be JSON-serialized"
-                            .format(value, key))
-                else:
-                    # outer try raised, but no key or value did.
-                    # Implausible; re-raise
-                    raise DataMonsterError("problem when getting splits: "
-                                           "`filters` dict can't be json-encoded")
-
             # `filters` could NOT be JSON-serialized/-encoded,
             # but no particular key or value was a problem
             raise DataMonsterError(
-                "Unexpected problem with `filters` argument: {} -- {}".format(
+                "Unexpected problem with `filters` when getting splits: {} -- {}".format(
                     type(e).__name__, str(e))
             )
 
     def _get_splits_path(self, uuid):
         return self.splits_path.format(uuid)
-
-    def get_splits_summary_for_datasource(self, datasource, filters=None):
-        """Return a dict summarizing the splits that would be returned by
-            `get_splits_for_datasource(datasource, filters=filters)`
-
-        :param datasource: a `Datasource`
-        :param company: a dict, as for `get_splits_for_datasource`
-
-        :return: a dict of the form
-            { 'split_count': N,
-              'columns': { split_col_name_0: set_of_values_for_this_col,
-                            ...
-                           split_col_name_i: set_of_values_for_this_col,
-                           ...
-                           'section_pk': {section_pk, ...}
-                           ...
-                         }
-            }
-        """
-        # Use version without cacheing/memoizing, not datasource.get_splits(filters=filters)
-        splits = self.get_splits_for_datasource(datasource, filters=filters)
-        return summarize_splits_dict(splits)

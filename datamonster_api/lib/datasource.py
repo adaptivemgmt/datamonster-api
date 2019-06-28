@@ -2,7 +2,6 @@ import json
 from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
-from .utils import summarize_splits_dict
 
 try:                # Py3
     from collections import Iterable
@@ -47,8 +46,9 @@ class Datasource(BaseClass):
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
     def get_splits(self, company=None, **kwargs):
-        """Return the (memoized) splits for this data source,
+        """Return the splits for this data source,
         restricted to `company` (/companies) if given, and filtered by any kwargs items.
+        Not memoized, or we'd be holding onto exhausted iterators AND returning them later
 
         :param company: a `Company`, an iterable of `Company`s [list, tuple, ...], or None.
             If not None, a filters dict will be used when getting splits,
@@ -66,58 +66,22 @@ class Datasource(BaseClass):
                 filters['section_pk'] = company.pk
             elif isinstance(company, Iterable):
                 # loop, rather than `all` and a comprehension, for better error reporting
-                company_list = []
+                pk_list = []
                 for c in company:
                     if not isinstance(c, Company):
                         raise DataMonsterError(
                             'company argument must be a company or a sequence of companies')
-                    company_list.append(c.pk)
-                filters['section_pk'] = company_list
+                    pk_list.append(c.pk)
+                filters['section_pk'] = pk_list
 
         # Now do the deed, and memoize
-        if not hasattr(self, '_splits'):
-            self._splits = {}
-        assert isinstance(self._splits, dict)
-
-        try:
-            filters_key = json.dumps(filters)
-        except Exception as e:
-            self.dm.check_filters_param(filters)    # will raise
-
-        if filters_key not in self._splits:
-            self._splits[filters_key] = self.dm.get_splits_for_datasource(self,
-                                                                          filters=filters)
-        return self._splits[filters_key]
-
-    def get_splits_summary(self, company=None, **kwargs):
-        """Return a dict summarizing the splits that would be returned by
-                `self.get_splits(company=None, **kwargs)`
-        Calling this method memoizes the summarized splits dict, so that a subsequent
-        call to
-            datasource.get_splits(company, **kwargs)
-        doesn't requery, but simply returns the memo.
-
-        Parameters are as for `get_splits`:
-
-        :param company: a `Company`, an iterable of `Company`s [list, tuple, ...], or None.
-            If not None, a filters dict will be used when getting splits,
-            and it will have a 'section_pk' key, with value
-                company.pk               if company is a `Company`,
-                [c.pk for c in company]  if company is a list of `Company`s.
-        :params kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
-
-        :return: a dict of the form
-            { 'split_count': N,
-              'columns': { split_col_name_0: set_of_values_for_this_col,
-                            ...
-                           split_col_name_i: set_of_values_for_this_col,
-                           ...
-                           'section_pk': {section_pk, ...}
-                           ...
-                         }
-            }
-        :raises: can raise DataMonsterError if company is not of an expected type,
-            or if some kwarg item is not JSON-serializable
-        """
-        splits = self.get_splits(company=company, **kwargs)
-        return summarize_splits_dict(splits)
+        # if not hasattr(self, '_splits'):
+        #     self._splits = {}
+        # assert isinstance(self._splits, dict)
+        #
+        # filters_json = self.dm.to_json_checked(filters)
+        # if filters_json not in self._splits:
+        #     self._splits[filters_json] = self.dm.get_splits_for_datasource(self,
+        #                                                                    filters=filters)
+        # return self._splits[filters_json]
+        return self.dm.get_splits_for_datasource(self, filters=filters)

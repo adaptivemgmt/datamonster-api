@@ -354,7 +354,18 @@ def test_summarize_splits_dict_normal(splits):
 
 
 def test_check_filters_param_huge_filters():
-    pass    # TODO
+    """
+    See if we can "run out of RAM" with a huge `filters`. Try to get json.loads(filters)
+    to fail because filters is too big.
+    Some `huge_filters`, maybe a fixture - a generated, trivial but enormous,
+    structurally valid `filters` dict (valid as a `filters` parameter to `FilterSet()` ctor).
+
+    The exact definition of "valid `filters` dict" is unspecified, at least DM-side.
+    Just "definition by ostentation": it is what it does, and no more, with no guarantees
+    about what it is or might be tomorrow.
+    """
+
+    pass    # TODO -- see docstring
 
 
 # Todo: can we test this?
