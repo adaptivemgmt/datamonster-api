@@ -2,7 +2,7 @@ from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
 
-try:                # Py3
+try:                # Py2
     from collections import Iterable
 except ImportError:
     from collections.abc import Iterable
