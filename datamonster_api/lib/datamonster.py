@@ -1,7 +1,7 @@
 import fastavro
 import pandas
 import six
-from six import iterkeys, itervalues, iteritems
+from six import iteritems
 import json
 
 from .aggregation import aggregation_sanity_check
@@ -16,7 +16,7 @@ class DataMonster(object):
 
     company_path = '/rest/v1/company'
     datasource_path = '/rest/v1/datasource'
-    splits_path = '/rest/v1/datasource/{}/splits'
+    dimensions_path = '/rest/v1/datasource/{}/dimensions'
 
     ##############################################
     #           Generic methods
@@ -256,21 +256,22 @@ class DataMonster(object):
 
         return df
 
-    #---------------------------------------------
-    #           Splits methods
-    #---------------------------------------------
-    def get_splits_for_datasource(self, datasource, filters=None):
-        """Get splits for the data source (data fountain).
+    ##############################################
+    #           Dimensions methods
+    ##############################################
+
+    def get_dimensions_for_datasource(self, datasource, filters=None):
+        """Get dimensions ("splits") for the data source (data fountain).
         :param datasource: an Oasis data fountain `Datasource`.
         :param filters: ((Dict[str, T] or None): a dict of key/value pairs to filter
-                splits by; both keys and values are `str`s.
+                dimensions by; both keys and values are `str`s.
                 Example:
                     {'salary_range': "< 10K",
                      'merchant_business_line': "Amazon",
                      'Prime account_type': "Credit Card"}
 
         :returns: (dict or None)
-            for Oasis data fountains, a dict of all splits for this data fountain;
+            for Oasis data fountains, a dict of all dimensions/splits for this data fountain;
             for Legacy `Datasource`s, this method returns `None`.
         :raises: re-raises `DataMonsterError` if self.client.get() raises that
         """
@@ -280,18 +281,18 @@ class DataMonster(object):
         if filters:
             params['filters'] = self.to_json_checked(filters)
 
-        url = self._get_splits_path(uuid=datasource.id)
+        url = self._get_dimensions_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         # Let DataMonsterError from self.client.get() happen -- we don't occlude these
-        # splits_from_oasis = self.client.get(url)
-        split_results = self._get_paginated_results(url)
-        return six.moves.map(self._split_result_pks_to_tickers, split_results)
+        # Formerly `self.client.get(url)` to get all at once.
+        dinension_results = self._get_paginated_results(url)
+        return six.moves.map(self._dimension_result_pks_to_tickers, dinension_results)
 
-    def _split_result_pks_to_tickers(self, result):
+    def _dimension_result_pks_to_tickers(self, result):
         """
-        :param result: a split dict, with keys
+        :param result: a dimension dict, with keys
             'split_combination'
             'max_date'
             'min_date'
@@ -300,7 +301,9 @@ class DataMonster(object):
             if 'section_pk' in result['split_combination'], its value
                 result['split_combination']['section_pk"]
             is a list of section_pk's (though we acommodate a single pk or None);
-            we replace each pk with self._pk_to_ticker(pk)
+            we replace each pk with
+                self._pk_to_ticker(pk)          if ticker is not None,
+                with str(pk) + '-NO_TICKER'     if ticker is None
         """
         combo = result['split_combination']
         if 'section_pk' in combo:
@@ -328,7 +331,7 @@ class DataMonster(object):
     @staticmethod
     def to_json_checked(filters):
         """
-        Not "private" because Datasource.get_splits() uses it too
+        Not "private" because Datasource.get_dimensions() uses it too
 
         :param filters: dict
         :return: JSON string encoding `filters`, the normal exit if filters is
@@ -353,8 +356,7 @@ class DataMonster(object):
             # keys must be strings
             if not isinstance(key, six.text_type):
                 raise DataMonsterError(
-                    "`filters` problem when getting splits: "
-                    "key '{}' is not a string."
+                    "`filters` problem when getting dimensions: key '{}' is not a string."
                         .format(key))
 
             # Check value: if key == 'section_pk', value must be let's say list of int,
@@ -368,19 +370,18 @@ class DataMonster(object):
             ):
                 type_name = type_.__name__
                 raise DataMonsterError(
-                    "`filters` problem when getting splits: "
+                    "`filters` problem when getting dimensions: "
                     "value '{}' of key '{}' must be a {} or list of {}s or None"
                         .format(value, key, type_name, type_name))
-        #
         try:
             return json.dumps(filters)
         except Exception as e:
             # `filters` could NOT be JSON-serialized/-encoded,
             # but no particular key or value was a problem
             raise DataMonsterError(
-                "Unexpected problem with `filters` when getting splits: {} -- {}".format(
+                "Unexpected problem with `filters` when getting dimensions: {} -- {}".format(
                     type(e).__name__, str(e))
             )
 
-    def _get_splits_path(self, uuid):
-        return self.splits_path.format(uuid)
+    def _get_dimensions_path(self, uuid):
+        return self.dimensions_path.format(uuid)

@@ -340,17 +340,8 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     assert query['endDate'] == ['2001-01-01']
 
 ##############################################
-#      Tests for "get_splits*" methods
+#      Tests for "get_dimensions*" methods
 ##############################################
-
-def test_summarize_splits_dict_no_results_key(splits):
-    pass    # TODO
-
-def test_summarize_splits_dict_some_result_has_no_split_combinations_key(splits):
-    pass    # TODO
-
-def test_summarize_splits_dict_normal(splits):
-    pass    # TODO
 
 
 def test_check_filters_param_huge_filters():
@@ -370,50 +361,56 @@ def test_check_filters_param_huge_filters():
 
 # Todo: can we test this?
 #
-def test_dm_get_splits_for_datasource_not_a_data_fountain(mocker, dm, datasource, filters):
-    pass    # TODO
-
-def test_dm_get_splits_for_datasource_bad_filters(mocker, dm, datasource, filters):
-    pass    # TODO
-
-def test_dm_get_splits_for_datasource_filters_is_none(mocker, dm, datasource):
-    pass    # TODO
-
-def test_dm_get_splits_for_datasource_nonempty_filters(mocker, dm, datasource, filters):
+def test_dm_get_dimensions_for_datasource_not_a_data_fountain(mocker, dm, datasource, filters):
     pass    # TODO
 
 
-def test_ds_get_splits_bad_company(mocker, dm, datasource, company, **kwargs):
+def test_dm_get_dimensions_for_datasource_bad_filters(mocker, dm, datasource, filters):
+    pass    # TODO
+
+
+def test_dm_get_dimensions_for_datasource_filters_is_none(mocker, dm, datasource):
+    pass    # TODO
+
+
+def test_dm_get_dimensions_for_datasource_nonempty_filters(mocker, dm, datasource, filters):
+    pass    # TODO
+
+
+def test_ds_get_dimensions_bad_company(mocker, dm, datasource, company, **kwargs):
     """
     :param company: a `Company`, an `Iterable` of `Company`s, or None
     """
     pass    # TODO
 
-def test_ds_get_splits_bad_kwarg(mocker, dm, datasource, company, **kwargs):
+
+def test_ds_get_dimensions_bad_kwarg(mocker, dm, datasource, company, **kwargs):
     """
     :param company: a `Company`, an `Iterable` of `Company`s, or None
     """
     pass    # TODO
 
-def test_ds_get_splits_no_filtering(mocker, dm, datasource):
+
+def test_ds_get_dimensions_no_filtering(mocker, dm, datasource):
     pass    # TODO
 
 
-def test_ds_get_splits_filtering(mocker, dm, datasource, company, **kwargs):
+def test_ds_get_dimensions_filtering(mocker, dm, datasource, company, **kwargs):
     pass    # TODO
 
 
-def test_dm_get_splits_for_datasource_company_no_kwargs(mocker, dm, datasource, company):
+def test_dm_get_dimensions_for_datasource_company_no_kwargs(mocker, dm, datasource, company):
     """
     :param company: a `Company`, an `Iterable` of `Company`s, or None
     """
     pass    # TODO
 
-def test_dm_get_splits_for_datasource_company_kwargs(mocker, dm, datasource, company, **kwargs):
+
+def test_dm_get_dimensions_for_datasource_company_kwargs(mocker, dm, datasource, company, **kwargs):
     """
     :param company: a `Company`, an `Iterable` of `Company`s, or None
     """
     pass    # TODO
 
-# TODO? Maybe don't need to test the "_summary" methods (anyway, not much) if the basic `get_splits`
-# |     method and `summarize_splits_dict` are tested.
+# TODO? Maybe don't need to test the "_summary" methods (anyway, not much) if the basic `get_dimensions`
+# |     method and `summarize_dimensions_dict` are tested.

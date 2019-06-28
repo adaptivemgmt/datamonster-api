@@ -1,4 +1,3 @@
-import json
 from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
@@ -45,20 +44,56 @@ class Datasource(BaseClass):
         """
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
-    def get_splits(self, company=None, **kwargs):
-        """Return the splits for this data source,
+    def get_dimensions(self, company=None, **kwargs):
+        """Return the dimensions for this data source,
         restricted to `company` (/companies) if given, and filtered by any kwargs items.
         Not memoized, or we'd be holding onto exhausted iterators AND returning them later
 
         :param company: a `Company`, an iterable of `Company`s [list, tuple, ...], or None.
-            If not None, a filters dict will be used when getting splits,
+            If not None, a filters dict will be used when getting dimensions,
             and it will have a 'section_pk' key, with value
                 company.pk               if company is a `Company`,
                 [c.pk for c in company]  if company is a list of `Company`s.
         :params kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
-        :return: splits dict, filtered as requested
+        :return: iterator through list of dimension dicts, filtered as requested.
+            Each dimension dict has these keys:
+            'max_date', 'min_date', 'row_count', 'split_combination'.
+            The first two are dates; `'row_count'` is an int; `'split_combination'` is
+            a dict, containing keys for this datasource -- things you can filter for using
+            keyword arguments.
+
+            EXAMPLE
+            --------
+            Assuming `dm` is a DataMonster object, and given this datasource and company:
+
+                datasource = next(dm.get_datasources(query='1010data Credit Sales Index'))
+                the_gap = dm.get_company_by_ticker('GPS')
+
+            this call to `get_dimensions`
+
+                datasource.get_dimensions( company=the_gap,
+                                           category='Banana Republic' )
+
+            returns an iterator to this list with just one dimensions dict:
+
+                [{'max_date': '2019-06-21',
+                  'min_date': '2014-01-01',
+                  'row_count': 1998,
+                  'split_combination': {'category': 'Banana Republic',
+                                        'country': 'US',
+                                        'ticker': 'GPS'}}]
+
+            In each 'split_combination' subdict as supplied by Oasis, if there is a
+            `'section_pk'` key, its value will be a company primary key (pk, an int),
+            or a list of company primary keys, or None.
+            We replace this key and its value by a new key `'ticker'`, whose values
+            are tickers of the companies designated by the pk's:
+
+                dm.get_company_by_pk(pk).ticker       if this is not None
+                str(pk) + '-NO_TICKER'                 if the ticker IS None
+
         :raises: can raise DataMonsterError if company is not of an expected type,
-            or if some kwarg item is not JSON-serializable
+            or if some kwarg item is not JSON-serializable.
         """
         filters = kwargs
         if company:
@@ -74,14 +109,4 @@ class Datasource(BaseClass):
                     pk_list.append(c.pk)
                 filters['section_pk'] = pk_list
 
-        # Now do the deed, and memoize
-        # if not hasattr(self, '_splits'):
-        #     self._splits = {}
-        # assert isinstance(self._splits, dict)
-        #
-        # filters_json = self.dm.to_json_checked(filters)
-        # if filters_json not in self._splits:
-        #     self._splits[filters_json] = self.dm.get_splits_for_datasource(self,
-        #                                                                    filters=filters)
-        # return self._splits[filters_json]
-        return self.dm.get_splits_for_datasource(self, filters=filters)
+        return self.dm.get_dimensions_for_datasource(self, filters=filters)
