@@ -10,6 +10,8 @@ from .company import Company
 from .datasource import Datasource
 from .errors import DataMonsterError
 
+__all__ = ['DataMonster', 'DimensionSet']
+
 
 class DataMonster(object):
     """DataMonster object. Main entry point to the library"""
@@ -290,10 +292,13 @@ class DataMonster(object):
 
         # Let DataMonsterError from self.client.get() happen -- we don't occlude these
         # Formerly `self.client.get(url)` to get all at once.
-        dinension_results = self._get_paginated_results(url)
-        return six.moves.map(self._dimension_result_pks_to_tickers, dinension_results)
+        # and formerly
+        #       dinension_results = self._get_paginated_dimensions(url)
+        #       return six.moves.map(self._section_pks_to_tickers_in_dimension, dinension_results)
+        return DimensionSet(url, self)
 
-    def _dimension_result_pks_to_tickers(self, result):
+
+    def _section_pks_to_tickers_in_dimension(self, result):
         """
         :param result: a dimension dict, with keys
             'split_combination'
@@ -346,7 +351,7 @@ class DataMonster(object):
                               six.text_type,
                filters[key] is of type T
                OR
-               it's a list of T
+               it's a list or tuple of T
                (OR it's None)
 
         These conditions ensure that `filters` is, at least in theory, JSON-serializable,
@@ -362,19 +367,19 @@ class DataMonster(object):
                     "`filters` problem when getting dimensions: key '{}' is not a string."
                         .format(key))
 
-            # Check value: if key == 'section_pk', value must be let's say list of int,
+            # Check value: if key == 'section_pk', value must be a list or tuple of int,
             # or (being lenient) an int or None. If key != 'section_pk', value must be
-            # a string or list of strings (or None)
+            # a string, or a list or tuple of strings, (or None)
             type_ = int if key == 'section_pk' else six.text_type
             if not (value is None or
                     isinstance(value, type_) or
-                    (isinstance(value, list) and
+                    (isinstance(value, (list, tuple)) and
                      all(isinstance(elt, type_) for elt in value))
             ):
                 type_name = type_.__name__
                 raise DataMonsterError(
                     "`filters` problem when getting dimensions: "
-                    "value '{}' of key '{}' must be a {} or list of {}s or None"
+                    "value '{}' of key '{}' must be a {}, or a list or tuple of {}s, or None"
                         .format(value, key, type_name, type_name))
         try:
             return json.dumps(filters)
@@ -388,3 +393,58 @@ class DataMonster(object):
 
     def _get_dimensions_path(self, uuid):
         return self.dimensions_path.format(uuid)
+
+
+class DimensionSet(object):
+    def __init__(self, url, dm):
+
+        resp0 = dm.client.get(url)
+
+        self._url_orig = url
+        self._min_date = resp0['min_date']
+        self._max_date = resp0['max_date']
+        self._row_count = resp0['row_count']
+        self._dimension_count = resp0['dimension_count']
+
+        self._resp = resp0
+        self._dm = dm
+
+    @property
+    def min_date(self):
+        return self._min_date
+
+    @property
+    def max_date(self):
+        return self._max_date
+
+    @property
+    def row_count(self):
+        return self._row_count
+
+    def __len__(self):
+        return self._dimension_count
+
+    def __iter__(self):
+        while True:
+            # shorthand
+            resp = self._resp
+            if not resp:
+                return
+
+            results_this_page = resp['results']
+            next_page_uri = resp['pagination']['nextPageURI']
+
+            if not results_this_page:
+                break
+
+            for dimension in results_this_page:
+                yield self._dm._section_pks_to_tickers_in_dimension(dimension)
+
+            if next_page_uri is None:
+                break
+
+            self._resp = self._dm.client.get(next_page_uri)
+
+        # So that attempts to reuse the iterator get nothing.
+        # Without this, the last page will be yielded
+        self._resp = None
