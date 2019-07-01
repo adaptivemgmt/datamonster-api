@@ -292,15 +292,12 @@ class DataMonster(object):
 
         # Let DataMonsterError from self.client.get() happen -- we don't occlude these
         # Formerly `self.client.get(url)` to get all at once.
-        # and formerly
-        #       dinension_results = self._get_paginated_dimensions(url)
-        #       return six.moves.map(self._section_pks_to_tickers_in_dimension, dinension_results)
         return DimensionSet(url, self)
 
 
-    def _section_pks_to_tickers_in_dimension(self, result):
+    def _convert_section_pks_to_tickers(self, dimension):
         """
-        :param result: a dimension dict, with keys
+        :param dimension: a dimension dict, with keys
             'split_combination'
             'max_date'
             'min_date'
@@ -313,7 +310,7 @@ class DataMonster(object):
                 self._pk_to_ticker(pk)          if ticker is not None,
                 with str(pk) + '-NO_TICKER'     if ticker is None
         """
-        combo = result['split_combination']
+        combo = dimension['split_combination']
         if 'section_pk' in combo:
             value = combo.pop('section_pk')
             if value is not None:
@@ -322,7 +319,7 @@ class DataMonster(object):
                     if isinstance(value, int) else
                     six.moves.map(self._pk_to_ticker, value)    # isinstance(value, list) -- List[int] in fact
                 )
-        return result
+        return dimension
 
     def _pk_to_ticker(self, pk):
         """
@@ -438,7 +435,7 @@ class DimensionSet(object):
                 break
 
             for dimension in results_this_page:
-                yield self._dm._section_pks_to_tickers_in_dimension(dimension)
+                yield self._dm._convert_section_pks_to_tickers(dimension)
 
             if next_page_uri is None:
                 break

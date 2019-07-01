@@ -15,8 +15,8 @@ def _assert_object_matches_company(company, company_obj):
     assert company_obj['ticker'] == company.ticker
     assert company_obj['uri'] == company.uri
 
-
 def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
+
     """Test getting companies. single page. various filters"""
 
     # The resulting companies should always be the same
