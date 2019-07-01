@@ -262,7 +262,11 @@ class DataMonster(object):
     #           Dimensions methods
     ##############################################
 
-    def get_dimensions_for_datasource(self, datasource, filters=None):
+    # BIGGER_PAGESIZE = None
+    BIGGER_PAGESIZE = 600
+
+    def get_dimensions_for_datasource(self, datasource, filters=None,
+                                      _pk2ticker=False):
         """Get dimensions ("splits") for the data source (data fountain)
         from the DataMonster REST endpoint '/datasource/<uuid>/dimensions?filters=...
         where the filters string is optional.
@@ -274,6 +278,9 @@ class DataMonster(object):
                     {'salary_range': "< 10K",
                      'merchant_business_line': "Amazon",
                      'Prime account_type': "Credit Card"}
+        :param _pk2ticker: (bool) If True, convert 'section_pk' items to 'tickers' items;
+            if False, don't. Datasource.get_dimensions() delegates to this method,
+            and calls with _pk2ticker=True
 
         :returns: (dict or None)
             for Oasis data fountains, a dict of all dimensions/splits for this data fountain;
@@ -285,6 +292,8 @@ class DataMonster(object):
         params = {}
         if filters:
             params['filters'] = self.to_json_checked(filters)
+        if self.BIGGER_PAGESIZE:
+            params['pagesize'] = self.BIGGER_PAGESIZE
 
         url = self._get_dimensions_path(uuid=datasource.id)
         if params:
@@ -292,16 +301,19 @@ class DataMonster(object):
 
         # Let DataMonsterError from self.client.get() happen -- we don't occlude these
         # Formerly `self.client.get(url)` to get all at once.
-        return DimensionSet(url, self)
+        return DimensionSet(url, self, _pk2ticker=_pk2ticker)
 
-
-    def _convert_section_pks_to_tickers(self, dimension):
+    def _convert_section_pks_to_tickers(self, dimension, pk2ticker_memos):
         """
         :param dimension: a dimension dict, with keys
             'split_combination'
             'max_date'
             'min_date'
             'row_count'
+        :param pk2ticker_memos: (dict) maps section_pk => ticker
+            section_pk's already in this dict will use the tickers already looked up and saved;
+            new section_pk's will have their tickers saved here
+
         :return: the dict, mutated:
             if 'section_pk' in result['split_combination'], its value
                 result['split_combination']['section_pk"]
@@ -315,23 +327,30 @@ class DataMonster(object):
             value = combo.pop('section_pk')
             if value is not None:
                 combo['ticker'] = (
-                    self._pk_to_ticker(value)
-                    if isinstance(value, int) else
-                    six.moves.map(self._pk_to_ticker, value)    # isinstance(value, list) -- List[int] in fact
+                    self._pk_to_ticker(value, pk2ticker_memos)
+                    if isinstance(value, int) else          # isinstance(value, list) -- List[int] in fact
+                    six.moves.map(lambda pk: self._pk_to_ticker(pk, pk2ticker_memos), value)
                 )
         return dimension
 
-    def _pk_to_ticker(self, pk):
+    def _pk_to_ticker(self, pk, pk2ticker_memos):
         """
         :param pk: int -- a section_pk
+        :param pk2ticker_memos: (dict) maps section_pk => ticker
+            section_pk's already in this dict will use the tickers already looked up and saved;
+            new section_pk's will have their tickers saved here
+
         :return: str --
                 dm.get_company_from_pk(pk).ticker   if that is not None,
                 str(pk) + '-NO_TICKER'              otherwise (ticker is None)
         """
-        ticker = self.get_company_by_pk(pk).ticker
-        if not ticker:
-            ticker = str(pk) + '-NO_TICKER'
-        return ticker
+        if pk not in pk2ticker_memos:
+            ticker = self.get_company_by_pk(pk).ticker
+            if not ticker:
+                ticker = str(pk) + '-NO_TICKER'
+            pk2ticker_memos[pk] = ticker
+
+        return pk2ticker_memos[pk]
 
     @staticmethod
     def to_json_checked(filters):
@@ -393,7 +412,13 @@ class DataMonster(object):
 
 
 class DimensionSet(object):
-    def __init__(self, url, dm):
+    def __init__(self, url, dm, _pk2ticker):
+        """
+
+        :param url: (string) URL for REST endpoint
+        :param dm: DataMonster object
+        :param _pk2ticker: (bool) If True, convert 'section_pk' items to 'tickers' items
+        """
 
         resp0 = dm.client.get(url)
 
@@ -402,6 +427,7 @@ class DimensionSet(object):
         self._max_date = resp0['max_date']
         self._row_count = resp0['row_count']
         self._dimension_count = resp0['dimension_count']
+        self._pk2ticker = _pk2ticker
 
         self._resp = resp0
         self._dm = dm
@@ -422,6 +448,7 @@ class DimensionSet(object):
         return self._dimension_count
 
     def __iter__(self):
+        pk2ticker_memos = {}
         while True:
             # shorthand
             resp = self._resp
@@ -435,7 +462,9 @@ class DimensionSet(object):
                 break
 
             for dimension in results_this_page:
-                yield self._dm._convert_section_pks_to_tickers(dimension)
+                if self._pk2ticker:
+                    dimension = self._dm._convert_section_pks_to_tickers(dimension, pk2ticker_memos)
+                yield dimension
 
             if next_page_uri is None:
                 break

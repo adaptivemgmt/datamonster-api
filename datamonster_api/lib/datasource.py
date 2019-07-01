@@ -109,4 +109,4 @@ class Datasource(BaseClass):
                     pk_list.append(c.pk)
                 filters['section_pk'] = pk_list
 
-        return self.dm.get_dimensions_for_datasource(self, filters=filters)
+        return self.dm.get_dimensions_for_datasource(self, filters=filters, _pk2ticker=True)
