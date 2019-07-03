@@ -339,12 +339,14 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     assert query['startDate'] == ['2000-01-01']
     assert query['endDate'] == ['2001-01-01']
 
+
 ##############################################
 #      Tests for "get_dimensions*" methods
 ##############################################
 
 class __NoCanSerialize(object):
     pass
+
 
 def _assert_equal_dimension_dicts(dim1, dim2):
     assert dim1['split_combination'] == dim2['split_combination']
@@ -360,9 +362,9 @@ def _assert_dict_and_DimensionSet_metadata_match(resp_dict, dim_set):
     assert resp_dict['row_count'] == dim_set.row_count
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------------------------------
 # Tests for `DataMonster.get_dimensions_for_datasource`
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------------------------------
 
 def test_filters_param_not_dict(dm, datasource):
     """
@@ -381,21 +383,6 @@ def test_filters_param_not_json_serializable(dm, datasource):
 
     assert ('Problem with filters when getting dimensions: '
             'Object of type __NoCanSerialize is not JSON serializable') in excinfo.value.args
-
-# def test_check_filters_param_huge_filters(dm, datasource, large_filter_dict):
-#     """
-#     See if we can "run out of RAM" with a huge `filters`. Try to get json.loads(filters)
-#     to fail because filters is too big.
-#
-#     The exact definition of "valid `filters` dict" is unspecified, at least DM-side.
-#     Just "definition by ostentation": it is what it does, and no more, with no guarantees
-#     about what it is or might be tomorrow.
-#     """
-#     with pytest.raises(DataMonsterError) as excinfo:
-#         dm.get_dimensions_for_datasource(datasource, large_filter_dict)
-#
-#     assert any(arg.startswith("Problem with filters when getting dimensions:")
-#                for arg in excinfo.value.args[0])
 
 
 def test_get_dimensions_for_datasource_single_page(mocker, dm, single_page_dimensions_result, datasource):
@@ -442,9 +429,9 @@ def test_get_dimensions_for_datasource_multi_page(mocker, dm, multi_page_dimensi
     _assert_equal_dimension_dicts(dimensions[2], multi_page_dimensions_results[1]['results'][0])
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------------------------------
 # Tests for `Datasource.get_dimensions`
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------------------------------
 
 
 def test_ds_get_dimensions_bad_company(datasource):
