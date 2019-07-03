@@ -1,0 +1,9 @@
+These steps update the pypi package:
+
+- Update the version number in setup.py
+
+- run the following command
+python setup.py sdist
+
+- run the following command
+twine upload dist/*
