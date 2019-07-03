@@ -261,7 +261,7 @@ class DataMonster(object):
     #           Dimensions methods
     ##############################################
 
-    SPLITS_PAGESIZE = 300   # = None
+    SPLITS_PAGESIZE = None      # or = 500
 
 
     def get_dimensions_for_datasource(self, datasource, filters=None,
@@ -398,11 +398,11 @@ class DataMonster(object):
         """
         if not isinstance(filters, dict):
             raise DataMonsterError(
-                " `filters` must be a dict, got {} instead".format(type(filters).__name__)
+                "`filters` must be a dict, got {} instead".format(type(filters).__name__)
             )
         try:
             return json.dumps(filters)
-        except ValueError as e:
+        except TypeError as e:
             raise DataMonsterError(
                 "Problem with filters when getting dimensions: {}".format(e)
             )

@@ -195,3 +195,115 @@ def datasource_details_result():
 def avro_data_file(datadir):
     with open(os.path.join(datadir, 'avro_data_file'), 'rb') as fp:
         return fp.read()
+
+
+# ------------------------
+# dimensions fixtures
+# ------------------------
+
+__uuid = 'ac3fa676-5934-4d8a-969c-62471e91b710'
+
+@pytest.fixture
+def fake_uuid():
+    return __uuid
+
+
+@pytest.fixture
+def company_with_int_id():
+    return Company('1', 'ticker', 'name', 'uri', None)
+
+
+@pytest.fixture
+def other_company_with_int_id():
+    return Company('2', 'other_ticker', 'other_name', 'other_uri', None)
+
+
+@pytest.fixture
+def single_page_dimensions_result():
+    return {
+        "pagination": {
+            "totalResults": 3,
+            "pageSize": 100,
+            "currentPage": 0,
+            "nextPageURI": None,
+            "previousPageURI": None,
+        },
+        'results': [{
+            'split_combination': {'country': 'US', 'category': 'neat', 'section_pk': [1]},
+            'max_date': '2019-01-01',
+            'min_date': '2015-01-01',
+            'row_count': 10
+        }, {
+            'split_combination': {'country': 'UK', 'category': 'swell',
+                                  'section_pk': [2]},
+            'max_date': '2019-01-01',
+            'min_date': '2015-01-01',
+            'row_count': 10
+        }, {
+            'split_combination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
+            'max_date': '2019-02-01',
+            'min_date': '2015-02-01',
+            'row_count': 10
+        }],
+        'max_date': '2019-02-01',
+        'min_date': '2015-01-01',
+        'dimension_count': 3,
+        'row_count': 30
+    }
+
+
+@pytest.fixture
+def multi_page_dimensions_results():
+    return [
+        # page 0
+        {
+            "pagination": {
+                "totalResults": 3,
+                "pageSize": 2,
+                "currentPage": 0,
+                "nextPageURI": '/rest/v1/datasource/__UUID__/dimensions?page=1&pagesize=2',
+                "previousPageURI": None,
+            },
+            'results': [{
+                'split_combination': {'country': 'US', 'category': 'swell', 'section_pk': [1]},
+                'max_date': '2019-01-01',
+                'min_date': '2015-01-01',
+                'row_count': 10
+            }, {
+                'split_combination': {'country': 'UK', 'category': 'swell', 'section_pk': [2]},
+                'max_date': '2019-01-01',
+                'min_date': '2015-01-01',
+                'row_count': 10
+            }],
+            'max_date': '2019-02-01',
+            'min_date': '2015-01-01',
+            'dimension_count': 3,
+            'row_count': 30
+        },
+        # page 1
+        {
+            "pagination": {
+                "totalResults": 3,
+                "pageSize": 1,
+                "currentPage": 1,
+                "nextPageURI": None,
+                "previousPageURI": '/rest/v1/datasource/__UUID__/dimensions?page=0&pagesize=2',
+            },
+            'results': [{
+                'split_combination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
+                'max_date': '2019-02-01',
+                'min_date': '2015-02-01',
+                'row_count': 10
+            }],
+            'max_date': '2019-02-01',
+            'min_date': '2015-01-01',
+            'dimension_count': 3,
+            'row_count': 30
+        }
+    ]
+
+
+@pytest.fixture
+def large_filter_dict():
+    N = 500000000   # 500_000_000
+    return {str(i): i for i in range(N)}

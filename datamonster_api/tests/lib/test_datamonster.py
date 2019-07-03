@@ -3,7 +3,7 @@ import pytest
 
 from six.moves.urllib.parse import urlparse, parse_qs
 
-from datamonster_api import Aggregation, DataMonsterError
+from datamonster_api import Aggregation, DataMonsterError, Datasource
 
 
 ##############################################
@@ -343,71 +343,138 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
 #      Tests for "get_dimensions*" methods
 ##############################################
 
+class __NoCanSerialize(object):
+    pass
 
-def test_check_filters_param_huge_filters():
+def _assert_equal_dimension_dicts(dim1, dim2):
+    assert dim1['split_combination'] == dim2['split_combination']
+    assert dim1['max_date'] == dim2['max_date']
+    assert dim1['min_date'] == dim2['min_date']
+    assert dim1['row_count'] == dim2['row_count']
+
+
+def _assert_dict_and_DimensionSet_metadata_match(resp_dict, dim_set):
+    assert resp_dict['dimension_count'] == len(dim_set)
+    assert resp_dict['max_date'] == dim_set.max_date
+    assert resp_dict['min_date'] == dim_set.min_date
+    assert resp_dict['row_count'] == dim_set.row_count
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Tests for `DataMonster.get_dimensions_for_datasource`
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def test_filters_param_not_dict(dm, datasource):
     """
-    See if we can "run out of RAM" with a huge `filters`. Try to get json.loads(filters)
-    to fail because filters is too big.
-    Some `huge_filters`, maybe a fixture - a generated, trivial but enormous,
-    structurally valid `filters` dict (valid as a `filters` parameter to `FilterSet()` ctor).
-
-    The exact definition of "valid `filters` dict" is unspecified, at least DM-side.
-    Just "definition by ostentation": it is what it does, and no more, with no guarantees
-    about what it is or might be tomorrow.
     """
+    with pytest.raises(DataMonsterError) as excinfo:
+        dm.get_dimensions_for_datasource(datasource, filters=[0, 1, 2])
 
-    pass    # TODO -- see docstring
+    assert '`filters` must be a dict, got list instead' in excinfo.value.args
 
 
-# Todo: can we test this?
+def test_filters_param_not_json_serializable(dm, datasource):
+    """
+    """
+    with pytest.raises(DataMonsterError) as excinfo:
+        dm.get_dimensions_for_datasource(datasource, filters={'somekey': __NoCanSerialize()})
+
+    assert ('Problem with filters when getting dimensions: '
+            'Object of type __NoCanSerialize is not JSON serializable') in excinfo.value.args
+
+# def test_check_filters_param_huge_filters(dm, datasource, large_filter_dict):
+#     """
+#     See if we can "run out of RAM" with a huge `filters`. Try to get json.loads(filters)
+#     to fail because filters is too big.
 #
-def test_dm_get_dimensions_for_datasource_not_a_data_fountain(mocker, dm, datasource, filters):
-    pass    # TODO
+#     The exact definition of "valid `filters` dict" is unspecified, at least DM-side.
+#     Just "definition by ostentation": it is what it does, and no more, with no guarantees
+#     about what it is or might be tomorrow.
+#     """
+#     with pytest.raises(DataMonsterError) as excinfo:
+#         dm.get_dimensions_for_datasource(datasource, large_filter_dict)
+#
+#     assert any(arg.startswith("Problem with filters when getting dimensions:")
+#                for arg in excinfo.value.args[0])
 
 
-def test_dm_get_dimensions_for_datasource_bad_filters(mocker, dm, datasource, filters):
-    pass    # TODO
+def test_get_dimensions_for_datasource_single_page(mocker, dm, single_page_dimensions_result, datasource):
+    """Test getting dimensions. single page"""
+
+    # The resulting dimensions should always be the same
+    def assert_results_good(dimensions):
+        dimensions = list(dimensions)
+        assert len(dimensions) == 3
+
+        _assert_equal_dimension_dicts(dimensions[0], single_page_dimensions_result['results'][0])
+        _assert_equal_dimension_dicts(dimensions[1], single_page_dimensions_result['results'][1])
+        _assert_equal_dimension_dicts(dimensions[2], single_page_dimensions_result['results'][2])
+
+    # No filters
+    dm.client.get = mocker.Mock(return_value=single_page_dimensions_result)
+    dm.client.get.reset_mock()
+    dimensions = dm.get_dimensions_for_datasource(datasource)
+
+    _assert_dict_and_DimensionSet_metadata_match(single_page_dimensions_result, dimensions)
+    assert_results_good(dimensions)
+
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == '/rest/v1/datasource/{}/dimensions'.format(datasource.id)
 
 
-def test_dm_get_dimensions_for_datasource_filters_is_none(mocker, dm, datasource):
-    pass    # TODO
+def test_get_dimensions_for_datasource_multi_page(mocker, dm, multi_page_dimensions_results, datasource):
+    """Test getting dimensions. multi-page"""
+
+    dm.client.get = mocker.Mock(side_effect=multi_page_dimensions_results)
+    dimensions = dm.get_dimensions_for_datasource(datasource)
+    _assert_dict_and_DimensionSet_metadata_match(multi_page_dimensions_results[0], dimensions)
+    _assert_dict_and_DimensionSet_metadata_match(multi_page_dimensions_results[1], dimensions)
+
+    dimensions = list(dimensions)
+
+    assert dm.client.get.call_count == 2
+
+    assert dm.client.get.call_args_list[0][0][0] == '/rest/v1/datasource/{}/dimensions'.format(datasource.id)
+    assert dm.client.get.call_args_list[1][0][0] == multi_page_dimensions_results[0]['pagination']['nextPageURI']
+
+    _assert_equal_dimension_dicts(dimensions[0], multi_page_dimensions_results[0]['results'][0])
+    _assert_equal_dimension_dicts(dimensions[1], multi_page_dimensions_results[0]['results'][1])
+    _assert_equal_dimension_dicts(dimensions[2], multi_page_dimensions_results[1]['results'][0])
 
 
-def test_dm_get_dimensions_for_datasource_nonempty_filters(mocker, dm, datasource, filters):
-    pass    # TODO
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Tests for `Datasource.get_dimensions`
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def test_ds_get_dimensions_bad_company(mocker, dm, datasource, company, **kwargs):
+def test_ds_get_dimensions_bad_company(datasource):
+    """
+    `company` arg neither a `Company`, nor an `Iterable` of `Company`s, nor None
+    """
+    with pytest.raises(DataMonsterError) as excinfo:
+        datasource.get_dimensions(company="string pertaining to a company")
+
+    assert 'company argument must be a `Company` or a sequence of `Company`s' in excinfo.value.args
+
+
+def test_ds_get_dimensions_non_company_in_list(datasource, company_with_int_id, other_company_with_int_id):
+    """
+    `company`an `Iterable` with an element that's not a `Company`
+    """
+    with pytest.raises(DataMonsterError) as excinfo:
+        datasource.get_dimensions(company=[company_with_int_id, other_company_with_int_id, (1, 2, 3)])
+
+    assert "Every item in `company` argument must be a `Company`; (1, 2, 3) is not" in excinfo.value.args
+
+
+def test_ds_get_dimensions_bad_kwarg(mocker, dm, company_with_int_id):
     """
     :param company: a `Company`, an `Iterable` of `Company`s, or None
     """
-    pass    # TODO
+    new_datasource = Datasource('id', 'name', 'category', 'uri', dm)
 
+    with pytest.raises(DataMonsterError) as excinfo:
+        new_datasource.get_dimensions(company=company_with_int_id, widget=__NoCanSerialize())
 
-def test_ds_get_dimensions_bad_kwarg(mocker, dm, datasource, company, **kwargs):
-    """
-    :param company: a `Company`, an `Iterable` of `Company`s, or None
-    """
-    pass    # TODO
-
-
-def test_ds_get_dimensions_no_filtering(mocker, dm, datasource):
-    pass    # TODO
-
-
-def test_ds_get_dimensions_filtering(mocker, dm, datasource, company, **kwargs):
-    pass    # TODO
-
-
-def test_dm_get_dimensions_for_datasource_company_no_kwargs(mocker, dm, datasource, company):
-    """
-    :param company: a `Company`, an `Iterable` of `Company`s, or None
-    """
-    pass    # TODO
-
-
-def test_dm_get_dimensions_for_datasource_company_kwargs(mocker, dm, datasource, company, **kwargs):
-    """
-    :param company: a `Company`, an `Iterable` of `Company`s, or None
-    """
-    pass    # TODO
+    assert ('Problem with filters when getting dimensions: '
+            'Object of type __NoCanSerialize is not JSON serializable') in excinfo.value.args

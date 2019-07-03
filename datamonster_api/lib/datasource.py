@@ -1,3 +1,5 @@
+import six
+
 from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
@@ -108,7 +110,7 @@ class Datasource(BaseClass):
         if company:
             if isinstance(company, Company):
                 filters['section_pk'] = company.pk
-            elif isinstance(company, Iterable):
+            elif isinstance(company, Iterable) and not isinstance(company, six.text_type):
                 # loop, rather than `all` and a comprehension, for better error reporting
                 pk_list = []
                 for cc in company:
