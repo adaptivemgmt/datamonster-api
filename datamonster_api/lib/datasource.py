@@ -47,7 +47,7 @@ class Datasource(BaseClass):
     def get_dimensions(self, company=None, **kwargs):
         """Return the dimensions for this data source,
         restricted to `company` (/companies) if given, and filtered by any kwargs items.
-        Not memoized, or we'd be holding onto exhausted iterators AND returning them later
+        Not memoized, or we'd be holding onto exhausted iterators AND returning them later.
 
         :param company: a `Company`, an iterable of `Company`s [list, tuple, ...], or None.
             If not None, a filters dict will be used when getting dimensions,
@@ -55,12 +55,20 @@ class Datasource(BaseClass):
                 company.pk               if company is a `Company`,
                 [c.pk for c in company]  if company is a list of `Company`s.
         :params kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
-        :return: iterator through list of dimension dicts, filtered as requested.
+
+        :return: a `DimensionSet` object - say, ``dimset` - an iterable through a dimension dicts,
+            filtered as requested. The object has a additional metadata:
+
+                `max_date`:  (string) max of the `max_date`s of the dimension dicts;
+                `min_date`:  (string) min of the `min_date`s of the dimension dicts;
+                `row_count`:  (int) sum of the `row_count`s of the dimension dicts;
+                `len(dimset)`: (int) number of dimension dicts in the collection
+
             Each dimension dict has these keys:
             'max_date', 'min_date', 'row_count', 'split_combination'.
-            The first two are dates; `'row_count'` is an int; `'split_combination'` is
-            a dict, containing keys for this datasource -- things you can filter for using
-            keyword arguments.
+            The first two are dates, as strings in ISO format; `'row_count'` is an int;
+            `'split_combination'` is a dict, containing keys for this datasource --
+            things you can filter for using keyword arguments.
 
             EXAMPLE
             --------
@@ -71,26 +79,27 @@ class Datasource(BaseClass):
 
             this call to `get_dimensions`
 
-                datasource.get_dimensions( company=the_gap,
-                                           category='Banana Republic' )
+                dimset = datasource.get_dimensions( company=the_gap,
+                                                    category='Banana Republic' )
 
-            returns an iterator to this list with just one dimensions dict:
+            returns an iterable, `dimset`, to this list with just one dimensions dict:
 
-                [{'max_date': '2019-06-21',
-                  'min_date': '2014-01-01',
-                  'row_count': 1998,
-                  'split_combination': {'category': 'Banana Republic',
-                                        'country': 'US',
-                                        'ticker': 'GPS'}}]
+                {'max_date': '2019-06-21',
+                 'min_date': '2014-01-01',
+                 'row_count': 1998,
+                 'split_combination': {'category': 'Banana Republic',
+                                       'country': 'US',
+                                       'ticker': 'GPS'}}]
 
             In each 'split_combination' subdict as supplied by Oasis, if there is a
             `'section_pk'` key, its value will be a company primary key (pk, an int),
             or a list of company primary keys, or None.
+
             We replace this key and its value by a new key `'ticker'`, whose values
             are tickers of the companies designated by the pk's:
 
                 dm.get_company_by_pk(pk).ticker       if this is not None
-                str(pk) + '-NO_TICKER'                 if the ticker IS None
+                str(pk) + '-NO_TICKER'                if the ticker IS None
 
         :raises: can raise DataMonsterError if company is not of an expected type,
             or if some kwarg item is not JSON-serializable.
@@ -102,11 +111,15 @@ class Datasource(BaseClass):
             elif isinstance(company, Iterable):
                 # loop, rather than `all` and a comprehension, for better error reporting
                 pk_list = []
-                for c in company:
-                    if not isinstance(c, Company):
+                for cc in company:
+                    if not isinstance(cc, Company):
                         raise DataMonsterError(
-                            'company argument must be a company or a sequence of companies')
-                    pk_list.append(c.pk)
+                            'Every item in `company` argument must be a `Company`; {!r} is not'
+                            .format(cc))
+                    pk_list.append(cc.pk)
                 filters['section_pk'] = pk_list
+            else:
+                raise DataMonsterError(
+                    'company argument must be a `Company` or a sequence of `Company`s')
 
         return self.dm.get_dimensions_for_datasource(self, filters=filters, _pk2ticker=True)

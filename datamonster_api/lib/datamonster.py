@@ -1,7 +1,6 @@
 import fastavro
 import pandas
 import six
-from six import iteritems
 import json
 
 from .aggregation import aggregation_sanity_check
@@ -56,7 +55,7 @@ class DataMonster(object):
 
         :param ticker: Ticker to search for
 
-        :returns: Single Company object if any companies exactly match the ticker.  Raises DatamonsterError otherwise.
+        :returns: Single Company object if any companies exactly match the ticker.  Raises DataMonsterError otherwise.
         """
         ticker = ticker.lower()
         companies = self.get_companies(ticker)
@@ -71,7 +70,7 @@ class DataMonster(object):
 
         :param company_id: (str) company_id to search for, str form of pk, e.g. '718'
 
-        :returns: Single Company if any company matches the id.  Raises DatamonsterError otherwise.
+        :returns: Single Company if any company matches the id.  Raises DataMonsterError otherwise.
         """
         company = self.get_company_details(company_id)
         company['uri'] = self._get_company_path(company_id)
@@ -82,7 +81,7 @@ class DataMonster(object):
 
         :param company_pk: (int) pk to search for
 
-        :returns: Single Company if any company has this pk.  Raises DatamonsterError otherwise.
+        :returns: Single Company if any company has this pk.  Raises DataMonsterError otherwise.
         """
         return self.get_company_by_id(str(company_pk))
 
@@ -262,8 +261,8 @@ class DataMonster(object):
     #           Dimensions methods
     ##############################################
 
-    # BIGGER_PAGESIZE = None
-    BIGGER_PAGESIZE = 600
+    SPLITS_PAGESIZE = 300   # = None
+
 
     def get_dimensions_for_datasource(self, datasource, filters=None,
                                       _pk2ticker=False):
@@ -272,44 +271,78 @@ class DataMonster(object):
         where the filters string is optional.
 
         :param datasource: an Oasis data fountain `Datasource`.
-        :param filters: ((Dict[str, T] or None): a dict of key/value pairs to filter
-                dimensions by; both keys and values are `str`s.
-                Example:
-                    {'salary_range': "< 10K",
-                     'merchant_business_line': "Amazon",
-                     'Prime account_type': "Credit Card"}
+        :param filters: ((dict or None): a dict of key/value pairs to filter
+                dimensions by.
         :param _pk2ticker: (bool) If True, convert 'section_pk' items to 'tickers' items;
             if False, don't. Datasource.get_dimensions() delegates to this method,
             and calls with _pk2ticker=True
 
-        :returns: (dict or None)
-            for Oasis data fountains, a dict of all dimensions/splits for this data fountain;
-            for Legacy `Datasource`s, this method returns `None`.
-        :raises: re-raises `DataMonsterError` if self.client.get() raises that
+        Return the dimensions for this data source, filtered by `filters`.
+
+        :return: a `DimensionSet` object - say, ``dimset` - an iterable through a dimension dicts,
+            filtered as requested. The object has a additional metadata:
+
+                `max_date`:  (string) max of the `max_date`s of the dimension dicts;
+                `min_date`:  (string) min of the `min_date`s of the dimension dicts;
+                `row_count`:  (int) sum of the `row_count`s of the dimension dicts;
+                `len(dimset)`: (int) number of dimension dicts in the collection
+
+            Each dimension dict has these keys:
+            'max_date', 'min_date', 'row_count', 'split_combination'.
+            The first two are dates, as strings in ISO format; `'row_count'` is an int;
+            `'split_combination'` is a dict, containing keys for this datasource --
+            things you can filter for.
+
+            EXAMPLE
+            --------
+            Assuming `dm` is a DataMonster object, and given this datasource and company:
+
+                datasource = next(dm.get_datasources(query='1010data Credit Sales Index'))
+                the_gap = dm.get_company_by_ticker('GPS')
+
+            this call to `get_dimensions`
+
+                dimset = dm.get_dimensions_for_datasource(
+                                datasource,
+                                filters={'section_pk': the_gap.pk,
+                                         'category': 'Banana Republic'})
+
+            returns an iterable, `dimset`, to a collection with just one dimensions dict.
+            The following loop
+
+                for dim in dimset:
+                    pprint(dim)
+
+            prettyprints the single dimension dict:
+
+                {'max_date': '2019-06-21',
+                 'min_date': '2014-01-01',
+                 'row_count': 1998,
+                 'split_combination': {'category': 'Banana Republic',
+                                       'country': 'US',
+                                       'section_pk': 707}}]
+
+        :raises: DataMonsterError if `filters` is not a dict or is not JSON-serializable.
+            Re-raises `DataMonsterError` if self.client.get() raises that.
         """
         self._check_param(datasource=datasource)
 
         params = {}
         if filters:
             params['filters'] = self.to_json_checked(filters)
-        if self.BIGGER_PAGESIZE:
-            params['pagesize'] = self.BIGGER_PAGESIZE
+        if self.SPLITS_PAGESIZE:
+            params['pagesize'] = self.SPLITS_PAGESIZE
 
         url = self._get_dimensions_path(uuid=datasource.id)
         if params:
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
-        # Let DataMonsterError from self.client.get() happen -- we don't occlude these
-        # Formerly `self.client.get(url)` to get all at once.
+        # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
         return DimensionSet(url, self, _pk2ticker=_pk2ticker)
 
     def _convert_section_pks_to_tickers(self, dimension, pk2ticker_memos):
         """
-        :param dimension: a dimension dict, with keys
-            'split_combination'
-            'max_date'
-            'min_date'
-            'row_count'
+        :param dimension: a dimension dict, with a key 'split_combination'.
         :param pk2ticker_memos: (dict) maps section_pk => ticker
             section_pk's already in this dict will use the tickers already looked up and saved;
             new section_pk's will have their tickers saved here
@@ -338,11 +371,11 @@ class DataMonster(object):
         :param pk: int -- a section_pk
         :param pk2ticker_memos: (dict) maps section_pk => ticker
             section_pk's already in this dict will use the tickers already looked up and saved;
-            new section_pk's will have their tickers saved here
+            newly-encountered section_pk's will have their tickers saved here
 
         :return: str --
                 dm.get_company_from_pk(pk).ticker   if that is not None,
-                str(pk) + '-NO_TICKER'              otherwise (ticker is None)
+                str(pk) + '-NO_TICKER'              otherwise (actual ticker is None or empty)
         """
         if pk not in pk2ticker_memos:
             ticker = self.get_company_by_pk(pk).ticker
@@ -358,53 +391,20 @@ class DataMonster(object):
         Not "private" because Datasource.get_dimensions() uses it too
 
         :param filters: dict
-        :return: JSON string encoding `filters`, the normal exit if filters is
-            JSON-serializable and satisfies the following conditions:
-            -- `filters` has all string keys (six.text_type), and
-            -- for every key in filters,
-                    where T = int
-                              if key == 'section_pk" else
-                              six.text_type,
-               filters[key] is of type T
-               OR
-               it's a list or tuple of T
-               (OR it's None)
+        :return: JSON string encoding `filters`. Normal exit if `filters` is
+            JSON-serializable.
 
-        These conditions ensure that `filters` is, at least in theory, JSON-serializable,
-        which it prrrrobably is, unless other issues obtain, e.g. it's enormous.
-
-        :raises: DataMonsterError if the conditions just described don't hold.
-            We try to provide an informative error messages.
+        :raises: DataMonsterError if `filters` isn't a dict or can't be JSON-encoded.
         """
-        for key, value in iteritems(filters):
-            # keys must be strings
-            if not isinstance(key, six.text_type):
-                raise DataMonsterError(
-                    "`filters` problem when getting dimensions: key '{}' is not a string."
-                        .format(key))
-
-            # Check value: if key == 'section_pk', value must be a list or tuple of int,
-            # or (being lenient) an int or None. If key != 'section_pk', value must be
-            # a string, or a list or tuple of strings, (or None)
-            type_ = int if key == 'section_pk' else six.text_type
-            if not (value is None or
-                    isinstance(value, type_) or
-                    (isinstance(value, (list, tuple)) and
-                     all(isinstance(elt, type_) for elt in value))
-            ):
-                type_name = type_.__name__
-                raise DataMonsterError(
-                    "`filters` problem when getting dimensions: "
-                    "value '{}' of key '{}' must be a {}, or a list or tuple of {}s, or None"
-                        .format(value, key, type_name, type_name))
+        if not isinstance(filters, dict):
+            raise DataMonsterError(
+                " `filters` must be a dict, got {} instead".format(type(filters).__name__)
+            )
         try:
             return json.dumps(filters)
-        except Exception as e:
-            # `filters` could NOT be JSON-serialized/-encoded,
-            # but no particular key or value was a problem
+        except ValueError as e:
             raise DataMonsterError(
-                "Unexpected problem with `filters` when getting dimensions: {} -- {}".format(
-                    type(e).__name__, str(e))
+                "Problem with filters when getting dimensions: {}".format(e)
             )
 
     def _get_dimensions_path(self, uuid):
@@ -414,23 +414,22 @@ class DataMonster(object):
 class DimensionSet(object):
     def __init__(self, url, dm, _pk2ticker):
         """
-
         :param url: (string) URL for REST endpoint
         :param dm: DataMonster object
         :param _pk2ticker: (bool) If True, convert 'section_pk' items to 'tickers' items
         """
+        self._url_orig = url
 
         resp0 = dm.client.get(url)
 
-        self._url_orig = url
         self._min_date = resp0['min_date']
         self._max_date = resp0['max_date']
         self._row_count = resp0['row_count']
         self._dimension_count = resp0['dimension_count']
-        self._pk2ticker = _pk2ticker
-
         self._resp = resp0
+
         self._dm = dm
+        self._pk2ticker = _pk2ticker
 
     @property
     def min_date(self):
@@ -450,8 +449,7 @@ class DimensionSet(object):
     def __iter__(self):
         pk2ticker_memos = {}
         while True:
-            # shorthand
-            resp = self._resp
+            resp = self._resp       # shorthand
             if not resp:
                 return
 
@@ -472,5 +470,5 @@ class DimensionSet(object):
             self._resp = self._dm.client.get(next_page_uri)
 
         # So that attempts to reuse the iterator get nothing.
-        # Without this, the last page will be yielded
+        # Without this, the last page could be re-yielded
         self._resp = None
