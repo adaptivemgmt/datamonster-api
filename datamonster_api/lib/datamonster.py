@@ -261,8 +261,6 @@ class DataMonster(object):
     #           Dimensions methods
     ##############################################
 
-    SPLITS_PAGESIZE = None      # or = 500
-
 
     def get_dimensions_for_datasource(self, datasource, filters=None,
                                       _pk2ticker=False):
@@ -330,8 +328,6 @@ class DataMonster(object):
         params = {}
         if filters:
             params['filters'] = self.to_json_checked(filters)
-        if self.SPLITS_PAGESIZE:
-            params['pagesize'] = self.SPLITS_PAGESIZE
 
         url = self._get_dimensions_path(uuid=datasource.id)
         if params:
@@ -378,9 +374,10 @@ class DataMonster(object):
                 str(pk) + '-NO_TICKER'              otherwise (actual ticker is None or empty)
         """
         if pk not in pk2ticker_memos:
-            ticker = self.get_company_by_pk(pk).ticker
+            company = self.get_company_by_pk(pk)
+            ticker = company.ticker
             if not ticker:
-                ticker = str(pk) + '-NO_TICKER'
+                ticker = company.name
             pk2ticker_memos[pk] = ticker
 
         return pk2ticker_memos[pk]
