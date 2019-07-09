@@ -419,10 +419,10 @@ class DimensionSet(object):
 
         resp0 = dm.client.get(url)
 
-        self._min_date = resp0['min_date']
-        self._max_date = resp0['max_date']
-        self._row_count = resp0['row_count']
-        self._dimension_count = resp0['dimension_count']
+        self._min_date = resp0['minDate']
+        self._max_date = resp0['maxDate']
+        self._row_count = resp0['rowCount']
+        self._dimension_count = resp0['dimensionCount']
         self._resp = resp0
 
         self._dm = dm
