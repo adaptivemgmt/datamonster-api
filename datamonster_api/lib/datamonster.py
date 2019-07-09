@@ -55,7 +55,8 @@ class DataMonster(object):
 
         :param ticker: Ticker to search for
 
-        :returns: Single Company object if any companies exactly match the ticker.  Raises DataMonsterError otherwise.
+        :return: Single Company object if any companies exactly match the ticker.
+            Raises DataMonsterError otherwise.
         """
         ticker = ticker.lower()
         companies = self.get_companies(ticker)
@@ -68,22 +69,16 @@ class DataMonster(object):
     def get_company_by_id(self, company_id):
         """Get a single company by id
 
-        :param company_id: (str) company_id to search for, str form of pk, e.g. '718'
+        :param company_id: (str or int) company_id to search for;
+                           str form of pk, e.g. '718', or pk e.g. 707
 
-        :returns: Single Company if any company matches the id.  Raises DataMonsterError otherwise.
+        :return: Single Company if any company matches the id.  Raises DataMonsterError otherwise.
         """
         company = self.get_company_details(company_id)
         company['uri'] = self._get_company_path(company_id)
         return self._company_result_to_object(company, has_details=True)
 
-    def get_company_by_pk(self, company_pk):
-        """Get a single company by pk
-
-        :param company_pk: (int) pk to search for
-
-        :returns: Single Company if any company has this pk.  Raises DataMonsterError otherwise.
-        """
-        return self.get_company_by_id(str(company_pk))
+    get_company_by_pk = get_company_by_id   # for existing users of `get_company_by_pk`
 
     def get_companies(self, query=None, datasource=None):
         """Get available companies
@@ -91,7 +86,7 @@ class DataMonster(object):
         :param query: Optional query that will restrict companies by ticker or name
         :param datasource: Optional Datasource object that restricts companies to those covered by the given datasource
 
-        :returns: List of Company objects
+        :return: List of Company objects
         """
         params = {}
         if query:
@@ -110,13 +105,17 @@ class DataMonster(object):
     def get_company_details(self, company_id):
         """Get details for the given company
 
-        :param company_id: The ID of the company for which we get the details
-        :returns: dictionary object with the company details
+        :param company_id: (str or int) The ID of the company for which we get the details
+        :return: dictionary object with the company details
         """
         path = self._get_company_path(company_id)
         return self.client.get(path)
 
     def _get_company_path(self, company_id):
+        """
+        :param company_id: (str or int)
+        :return: URL for REST endpoint that returns details for this company
+        """
         return '{}/{}'.format(self.company_path, company_id)
 
     def _company_result_to_object(self, company, has_details=False):
@@ -142,7 +141,7 @@ class DataMonster(object):
         :param query: Optional query that will restrict datasources by name or provider name
         :param company: Optional Company object that restricts datasource to those that cover the given company
 
-        :returns: List of Datasource objects
+        :return: List of Datasource objects
         """
         params = {}
         if query:
@@ -173,7 +172,7 @@ class DataMonster(object):
         :param start_date: Optional filter for the start date of the data
         :param end_date: Optional filter for the end date of the data
 
-        :returns: pandas DataFrame
+        :return: pandas DataFrame
         """
         self._check_param(company=company, datasource=datasource)
 
@@ -208,7 +207,7 @@ class DataMonster(object):
         """Get details (metadata) for the given datasource
 
         :param datasource_id: The ID of the datasource for which we get the details
-        :returns: dictionary object with the datasource details
+        :return: dictionary object with the datasource details
         """
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
@@ -263,7 +262,7 @@ class DataMonster(object):
 
 
     def get_dimensions_for_datasource(self, datasource, filters=None,
-                                      _pk2ticker=False):
+                                      _convert_pks_to_tickers=False):
         """Get dimensions ("splits") for the data source (data fountain)
         from the DataMonster REST endpoint '/datasource/<uuid>/dimensions?filters=...
         where the filters string is optional.
@@ -271,9 +270,9 @@ class DataMonster(object):
         :param datasource: an Oasis data fountain `Datasource`.
         :param filters: ((dict or None): a dict of key/value pairs to filter
                 dimensions by.
-        :param _pk2ticker: (bool) If True, convert 'section_pk' items to 'tickers' items;
-            if False, don't. Datasource.get_dimensions() delegates to this method,
-            and calls with _pk2ticker=True
+        :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items \
+            to 'tickers' items; if False, don't. Datasource.get_dimensions() delegates
+            to this method, and calls with _convert_pks_to_tickers=True.
 
         Return the dimensions for this data source, filtered by `filters`.
 
@@ -334,7 +333,7 @@ class DataMonster(object):
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
-        return DimensionSet(url, self, _pk2ticker=_pk2ticker)
+        return DimensionSet(url, self, _convert_pks_to_tickers=_convert_pks_to_tickers)
 
     def _convert_section_pks_to_tickers(self, dimension, pk2ticker_memos):
         """
@@ -354,7 +353,7 @@ class DataMonster(object):
         combo = dimension['split_combination']
         if 'section_pk' in combo:
             value = combo.pop('section_pk')
-            if value is not None:
+            if value is not None:           # type: int or list[int]
                 combo['ticker'] = (
                     self._pk_to_ticker(value, pk2ticker_memos)
                     if isinstance(value, int) else          # isinstance(value, list) -- List[int] in fact
@@ -409,11 +408,12 @@ class DataMonster(object):
 
 
 class DimensionSet(object):
-    def __init__(self, url, dm, _pk2ticker):
+    def __init__(self, url, dm, _convert_pks_to_tickers):
         """
         :param url: (string) URL for REST endpoint
         :param dm: DataMonster object
-        :param _pk2ticker: (bool) If True, convert 'section_pk' items to 'tickers' items
+        :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items
+            to 'tickers' items
         """
         self._url_orig = url
 
@@ -426,7 +426,7 @@ class DimensionSet(object):
         self._resp = resp0
 
         self._dm = dm
-        self._pk2ticker = _pk2ticker
+        self._convert_pks_to_tickers = _convert_pks_to_tickers
 
     @property
     def min_date(self):
@@ -457,8 +457,9 @@ class DimensionSet(object):
                 break
 
             for dimension in results_this_page:
-                if self._pk2ticker:
-                    dimension = self._dm._convert_section_pks_to_tickers(dimension, pk2ticker_memos)
+                if self._convert_pks_to_tickers:
+                    dimension = self._dm._convert_section_pks_to_tickers(dimension,
+                                                                         pk2ticker_memos)
                 yield dimension
 
             if next_page_uri is None:

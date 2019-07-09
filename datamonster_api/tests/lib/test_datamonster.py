@@ -356,10 +356,10 @@ def _assert_equal_dimension_dicts(dim1, dim2):
 
 
 def _assert_dict_and_DimensionSet_metadata_match(resp_dict, dim_set):
-    assert resp_dict['dimension_count'] == len(dim_set)
-    assert resp_dict['max_date'] == dim_set.max_date
-    assert resp_dict['min_date'] == dim_set.min_date
-    assert resp_dict['row_count'] == dim_set.row_count
+    assert resp_dict['dimensionCount'] == len(dim_set)
+    assert resp_dict['maxDate'] == dim_set.max_date
+    assert resp_dict['minDate'] == dim_set.min_date
+    assert resp_dict['rowCount'] == dim_set.row_count
 
 
 # ------------------------------------------------------
@@ -441,7 +441,7 @@ def test_ds_get_dimensions_bad_company(datasource):
     with pytest.raises(DataMonsterError) as excinfo:
         datasource.get_dimensions(company="string pertaining to a company")
 
-    assert 'company argument must be a `Company` or a sequence of `Company`s' in excinfo.value.args
+    assert 'company argument must be a `Company`, or a list or tuple of `Company`s' in excinfo.value.args
 
 
 def test_ds_get_dimensions_non_company_in_list(datasource, company_with_int_id, other_company_with_int_id):

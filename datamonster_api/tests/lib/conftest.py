@@ -245,10 +245,10 @@ def single_page_dimensions_result():
             'min_date': '2015-02-01',
             'row_count': 10
         }],
-        'max_date': '2019-02-01',
-        'min_date': '2015-01-01',
-        'dimension_count': 3,
-        'row_count': 30
+        'maxDate': '2019-02-01',
+        'minDate': '2015-01-01',
+        'rowCount': 30,
+        'dimensionCount': 3
     }
 
 
@@ -275,10 +275,10 @@ def multi_page_dimensions_results():
                 'min_date': '2015-01-01',
                 'row_count': 10
             }],
-            'max_date': '2019-02-01',
-            'min_date': '2015-01-01',
-            'dimension_count': 3,
-            'row_count': 30
+            'maxDate': '2019-02-01',
+            'minDate': '2015-01-01',
+            'rowCount': 30,
+            'dimensionCount': 3
         },
         # page 1
         {
@@ -295,10 +295,10 @@ def multi_page_dimensions_results():
                 'min_date': '2015-02-01',
                 'row_count': 10
             }],
-            'max_date': '2019-02-01',
-            'min_date': '2015-01-01',
-            'dimension_count': 3,
-            'row_count': 30
+            'maxDate': '2019-02-01',
+            'minDate': '2015-01-01',
+            'rowCount': 30,
+            'dimensionCount': 3
         }
     ]
 

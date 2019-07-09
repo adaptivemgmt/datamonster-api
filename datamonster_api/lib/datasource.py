@@ -4,11 +4,6 @@ from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
 
-try:                # Py2
-    from collections import Iterable
-except ImportError:
-    from collections.abc import Iterable
-
 
 class Datasource(BaseClass):
     """Class for a datasource"""
@@ -51,15 +46,15 @@ class Datasource(BaseClass):
         restricted to `company` (/companies) if given, and filtered by any kwargs items.
         Not memoized, or we'd be holding onto exhausted iterators AND returning them later.
 
-        :param company: a `Company`, an iterable of `Company`s [list, tuple, ...], or None.
+        :param company: a `Company`, a list or tuple of `Company`s, or None.
             If not None, a filters dict will be used when getting dimensions,
             and it will have a 'section_pk' key, with value
                 company.pk               if company is a `Company`,
                 [c.pk for c in company]  if company is a list of `Company`s.
-        :params kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
+        :param kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
 
-        :return: a `DimensionSet` object - say, ``dimset` - an iterable through a dimension dicts,
-            filtered as requested. The object has a additional metadata:
+        :return: a `DimensionSet` object - say, ``dimset` - an iterable through a collection
+            of dimension dicts, filtered as requested. The object has a additional metadata:
 
                 `max_date`:  (string) max of the `max_date`s of the dimension dicts;
                 `min_date`:  (string) min of the `min_date`s of the dimension dicts;
@@ -110,7 +105,7 @@ class Datasource(BaseClass):
         if company:
             if isinstance(company, Company):
                 filters['section_pk'] = company.pk
-            elif isinstance(company, Iterable) and not isinstance(company, six.text_type):
+            elif isinstance(company, (list, tuple)):
                 # loop, rather than `all` and a comprehension, for better error reporting
                 pk_list = []
                 for cc in company:
@@ -122,6 +117,7 @@ class Datasource(BaseClass):
                 filters['section_pk'] = pk_list
             else:
                 raise DataMonsterError(
-                    'company argument must be a `Company` or a sequence of `Company`s')
+                    'company argument must be a `Company`, or a list or tuple of `Company`s')
 
-        return self.dm.get_dimensions_for_datasource(self, filters=filters, _pk2ticker=True)
+        return self.dm.get_dimensions_for_datasource(self, filters=filters,
+                                                     _convert_pks_to_tickers=True)

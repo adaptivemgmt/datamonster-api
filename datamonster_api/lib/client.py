@@ -29,7 +29,16 @@ class Client(object):
             hashlib.sha256
         ).hexdigest()
 
-    def get(self, path, headers={}):
+    def get(self, path, headers=None):
+        """
+        :param path: (six.text_type)
+        :param headers: (dict or None) Additional header items.
+        :return: the response, appropriately formatted/deserialized
+        :raises: DataMonsterError, if requests `get` returns with status_code != 200,
+            or if content type of response is neither json nor avro
+        """
+        headers = headers or {}     # so that `headers` doesn't have mutable default value {}
+
         date = datetime.datetime.utcnow()
         date_str = date.strftime('%a, %d %b %Y %H:%M:%S') + ' +0000'
         method = 'GET'
