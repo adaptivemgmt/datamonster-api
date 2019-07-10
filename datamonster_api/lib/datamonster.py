@@ -278,13 +278,13 @@ class DataMonster(object):
             of dimension dicts, filtered as requested. The object has additional metadata:
 
             `max_date`:
-                (string) max of the ``max_date``\ s of the dimension dicts;
+                (string) max of the `max_date`s of the dimension dicts;
 
             `min_date`:
-                (string) min of the ``min_date``\ s of the dimension dicts;
+                (string) min of the `min_date`s of the dimension dicts;
 
             `row_count`:
-                (int) sum of the ``row_count``\ s of the dimension dicts;
+                (int) sum of the `row_count`s of the dimension dicts;
 
             `len(dimset)`:
                 (int) number of dimension dicts in the collection
@@ -348,18 +348,18 @@ class DataMonster(object):
             new `section_pk`s will have their tickers saved here
 
         :return: the dict, mutated:
-            if 'section_pk' in ``dimension['split_combination']``, its value::
+            if 'section_pk' in `dimension['split_combination']`, its value::
 
                 dimension['split_combination']['section_pk"]
 
-            is a list of `section_pk`s (though we accommodate a single pk or ``None``);
+            is a list of `section_pk`s (though we accommodate a single pk or `None`);
             we replace each pk with
 
-            ``self._pk_to_ticker(pk)``
-                  if ticker is not ``None``,
+            `self._pk_to_ticker(pk)`
+                  if ticker is not `None`,
 
-            name of company with key ``pk``
-               if ticker is ``None``
+            name of company with key `pk`
+               if ticker is `None`
         """
         combo = dimension['split_combination']
         if 'section_pk' in combo:
@@ -381,11 +381,11 @@ class DataMonster(object):
 
         :return: str --
 
-                ``dm.get_company_from_pk(pk).ticker``
-                    if that is not ``None``,
+                `dm.get_company_from_pk(pk).ticker`
+                    if that is not `None`,
 
-                name of company with key ``pk``
-                    otherwise (actual ticker is ``None`` or empty)
+                name of company with key `pk`
+                    otherwise (actual ticker is `None` or empty)
         """
         if pk not in pk2ticker_memos:
             company = self.get_company_by_pk(pk)
@@ -399,13 +399,13 @@ class DataMonster(object):
     @staticmethod
     def to_json_checked(filters):
         """
-        Not "private" because ``Datasource.get_dimensions()`` uses it too
+        Not "private" because `Datasource.get_dimensions()` uses it too
 
         :param filters: dict
-        :return: JSON string encoding ``filters``. Normal exit if ``filters`` is
+        :return: JSON string encoding `filters`. Normal exit if `filters` is
             JSON-serializable.
 
-        :raises: DataMonsterError if ``filters`` isn't a dict or can't be JSON-encoded.
+        :raises: DataMonsterError if `filters` isn't a dict or can't be JSON-encoded.
         """
         if not isinstance(filters, dict):
             raise DataMonsterError(
@@ -454,7 +454,7 @@ class DimensionSet(object):
 
     @property
     def min_date(self):
-        """min of the ``min_date``\ s of the dimension dicts
+        """min of the `min_date`s of the dimension dicts
         :return type: str
         """
         return self._min_date
@@ -462,14 +462,14 @@ class DimensionSet(object):
     @property
     def max_date(self):
         """
-        (str) max of the ``max_date``\ s of the dimension dicts
+        (str) max of the `max_date`s of the dimension dicts
         """
         return self._max_date
 
     @property
     def row_count(self):
         """
-        (int) sum of the ``row_count``\ s of the dimension dicts
+        (int) sum of the `row_count`s of the dimension dicts
         """
         return self._row_count
 

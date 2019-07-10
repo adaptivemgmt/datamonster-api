@@ -110,7 +110,7 @@ class Datasource(BaseClass):
             name of company with key `pk`
                 otherwise (actual ticker is None or empty)
 
-        :raises: can raise ``DataMonsterError`` if company is not of an expected type,
+        :raises: can raise `DataMonsterError` if company is not of an expected type,
             or if some kwarg item is not JSON-serializable.
         """
         filters = kwargs
