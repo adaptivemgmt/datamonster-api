@@ -220,6 +220,8 @@ def other_company_with_int_id():
 
 @pytest.fixture
 def single_page_dimensions_result():
+    """ As returned by DM "GET"
+    """
     return {
         "pagination": {
             "totalResults": 3,
@@ -229,21 +231,21 @@ def single_page_dimensions_result():
             "previousPageURI": None,
         },
         'results': [{
-            'split_combination': {'country': 'US', 'category': 'neat', 'section_pk': [1]},
-            'max_date': '2019-01-01',
-            'min_date': '2015-01-01',
-            'row_count': 10
+            'splitCombination': {'country': 'US', 'category': 'neat', 'section_pk': [1]},
+            'maxDate': '2019-01-01',
+            'minDate': '2015-01-01',
+            'rowCount': 10
         }, {
-            'split_combination': {'country': 'UK', 'category': 'swell',
+            'splitCombination': {'country': 'UK', 'category': 'swell',
                                   'section_pk': [2]},
-            'max_date': '2019-01-01',
-            'min_date': '2015-01-01',
-            'row_count': 10
+            'maxDate': '2019-01-01',
+            'minDate': '2015-01-01',
+            'rowCount': 10
         }, {
-            'split_combination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
-            'max_date': '2019-02-01',
-            'min_date': '2015-02-01',
-            'row_count': 10
+            'splitCombination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
+            'maxDate': '2019-02-01',
+            'minDate': '2015-02-01',
+            'rowCount': 10
         }],
         'maxDate': '2019-02-01',
         'minDate': '2015-01-01',
@@ -254,6 +256,8 @@ def single_page_dimensions_result():
 
 @pytest.fixture
 def multi_page_dimensions_results():
+    """ As returned by DM "GET"
+    """
     return [
         # page 0
         {
@@ -265,15 +269,15 @@ def multi_page_dimensions_results():
                 "previousPageURI": None,
             },
             'results': [{
-                'split_combination': {'country': 'US', 'category': 'swell', 'section_pk': [1]},
-                'max_date': '2019-01-01',
-                'min_date': '2015-01-01',
-                'row_count': 10
+                'splitCombination': {'country': 'US', 'category': 'swell', 'section_pk': [1]},
+                'maxDate': '2019-01-01',
+                'minDate': '2015-01-01',
+                'rowCount': 10
             }, {
-                'split_combination': {'country': 'UK', 'category': 'swell', 'section_pk': [2]},
-                'max_date': '2019-01-01',
-                'min_date': '2015-01-01',
-                'row_count': 10
+                'splitCombination': {'country': 'UK', 'category': 'swell', 'section_pk': [2]},
+                'maxDate': '2019-01-01',
+                'minDate': '2015-01-01',
+                'rowCount': 10
             }],
             'maxDate': '2019-02-01',
             'minDate': '2015-01-01',
@@ -290,10 +294,10 @@ def multi_page_dimensions_results():
                 "previousPageURI": '/rest/v1/datasource/__UUID__/dimensions?page=0&pagesize=2',
             },
             'results': [{
-                'split_combination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
-                'max_date': '2019-02-01',
-                'min_date': '2015-02-01',
-                'row_count': 10
+                'splitCombination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
+                'maxDate': '2019-02-01',
+                'minDate': '2015-02-01',
+                'rowCount': 10
             }],
             'maxDate': '2019-02-01',
             'minDate': '2015-01-01',

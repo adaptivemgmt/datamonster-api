@@ -348,11 +348,11 @@ class __NoCanSerialize(object):
     pass
 
 
-def _assert_equal_dimension_dicts(dim1, dim2):
-    assert dim1['split_combination'] == dim2['split_combination']
-    assert dim1['max_date'] == dim2['max_date']
-    assert dim1['min_date'] == dim2['min_date']
-    assert dim1['row_count'] == dim2['row_count']
+def _assert_equal_dimension_dicts(expected, mocked):
+    assert expected['split_combination'] == mocked['splitCombination']
+    assert expected['max_date'] == mocked['maxDate']
+    assert expected['min_date'] == mocked['minDate']
+    assert expected['row_count'] == mocked['rowCount']
 
 
 def _assert_dict_and_DimensionSet_metadata_match(resp_dict, dim_set):

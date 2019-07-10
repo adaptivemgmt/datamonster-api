@@ -347,7 +347,8 @@ class DataMonster(object):
             `section_pk's already in this dict will use the tickers already looked up and saved;
             new `section_pk`s will have their tickers saved here
 
-        :return: the dict, mutated:
+        :return: `None`
+        Mutates the dict `dimension:
             if 'section_pk' in `dimension['split_combination']`, its value::
 
                 dimension['split_combination']['section_pk"]
@@ -495,9 +496,11 @@ class DimensionSet(object):
                 break
 
             for dimension in results_this_page:
+                # do `_camel2snake` *before* possible pk->ticker conversion,
+                # as `_convert_section_pks_to_tickers` assumes snake_case
+                dimension = DimensionSet._camel2snake(dimension)
                 if self._convert_pks_to_tickers:
-                    dimension = self._dm._convert_section_pks_to_tickers(dimension,
-                                                                         pk2ticker_memos)
+                    self._dm._convert_section_pks_to_tickers(dimension, pk2ticker_memos)
                 yield dimension
 
             if next_page_uri is None:
@@ -508,3 +511,16 @@ class DimensionSet(object):
         # So that attempts to reuse the iterator get nothing.
         # Without this, the last page could be re-yielded
         self._resp = None
+
+    @staticmethod
+    def _camel2snake(dimension_dict):
+        """Return a dict with four keys changed from camelCase to snake_case;
+        `dimension_dict` unchanged
+        """
+        camel2snake = {
+            'splitCombination': 'split_combination',
+            'maxDate': 'max_date',
+            'minDate': 'min_date',
+            'rowCount': 'row_count',
+        }
+        return {camel2snake[k]: dimension_dict[k] for k in dimension_dict}
