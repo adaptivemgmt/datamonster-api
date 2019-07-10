@@ -270,19 +270,24 @@ class DataMonster(object):
         :param datasource: an Oasis data fountain `Datasource`.
         :param filters: ((dict or None): a dict of key/value pairs to filter
                 dimensions by.
-        :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items \
+        :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items
             to 'tickers' items; if False, don't. Datasource.get_dimensions() delegates
             to this method, and calls with _convert_pks_to_tickers=True.
 
-        Return the dimensions for this data source, filtered by `filters`.
+        :return: a `DimensionSet` object - say, `dimset` - an iterable through a collection
+            of dimension dicts, filtered as requested. The object has additional metadata:
 
-        :return: a `DimensionSet` object - say, ``dimset` - an iterable through a dimension dicts,
-            filtered as requested. The object has a additional metadata:
+            `max_date`:
+                (string) max of the ``max_date``\ s of the dimension dicts;
 
-                `max_date`:  (string) max of the `max_date`s of the dimension dicts;
-                `min_date`:  (string) min of the `min_date`s of the dimension dicts;
-                `row_count`:  (int) sum of the `row_count`s of the dimension dicts;
-                `len(dimset)`: (int) number of dimension dicts in the collection
+            `min_date`:
+                (string) min of the ``min_date``\ s of the dimension dicts;
+
+            `row_count`:
+                (int) sum of the ``row_count``\ s of the dimension dicts;
+
+            `len(dimset)`:
+                (int) number of dimension dicts in the collection
 
             Each dimension dict has these keys:
             'max_date', 'min_date', 'row_count', 'split_combination'.
@@ -291,13 +296,13 @@ class DataMonster(object):
             things you can filter for.
 
             EXAMPLE
-            --------
-            Assuming `dm` is a DataMonster object, and given this datasource and company:
+
+            Assuming `dm` is a DataMonster object, and given this datasource and company::
 
                 datasource = next(dm.get_datasources(query='1010data Credit Sales Index'))
                 the_gap = dm.get_company_by_ticker('GPS')
 
-            this call to `get_dimensions`
+            this call to `get_dimensions_for_datasource`::
 
                 dimset = dm.get_dimensions_for_datasource(
                                 datasource,
@@ -305,16 +310,16 @@ class DataMonster(object):
                                          'category': 'Banana Republic'})
 
             returns an iterable, `dimset`, to a collection with just one dimensions dict.
-            The following loop
+            Assuming `from pprint import pprint`, the following loop::
 
                 for dim in dimset:
                     pprint(dim)
 
-            prettyprints the single dimension dict:
+            prettyprints the single dimension dict::
 
                 {'max_date': '2019-06-21',
                  'min_date': '2014-01-01',
-                 'row_count': 1998,
+                 'row_count': 1998,s
                  'split_combination': {'category': 'Banana Republic',
                                        'country': 'US',
                                        'section_pk': 707}}]
@@ -338,17 +343,23 @@ class DataMonster(object):
     def _convert_section_pks_to_tickers(self, dimension, pk2ticker_memos):
         """
         :param dimension: a dimension dict, with a key 'split_combination'.
-        :param pk2ticker_memos: (dict) maps section_pk => ticker
-            section_pk's already in this dict will use the tickers already looked up and saved;
-            new section_pk's will have their tickers saved here
+        :param pk2ticker_memos: (dict) maps `section_pk` => `ticker`
+            `section_pk's already in this dict will use the tickers already looked up and saved;
+            new `section_pk`s will have their tickers saved here
 
         :return: the dict, mutated:
-            if 'section_pk' in result['split_combination'], its value
-                result['split_combination']['section_pk"]
-            is a list of section_pk's (though we acommodate a single pk or None);
+            if 'section_pk' in ``dimension['split_combination']``, its value::
+
+                dimension['split_combination']['section_pk"]
+
+            is a list of `section_pk`s (though we accommodate a single pk or ``None``);
             we replace each pk with
-                self._pk_to_ticker(pk)          if ticker is not None,
-                with str(pk) + '-NO_TICKER'     if ticker is None
+
+            ``self._pk_to_ticker(pk)``
+                  if ticker is not ``None``,
+
+            name of company with key ``pk``
+               if ticker is ``None``
         """
         combo = dimension['split_combination']
         if 'section_pk' in combo:
@@ -365,12 +376,16 @@ class DataMonster(object):
         """
         :param pk: int -- a section_pk
         :param pk2ticker_memos: (dict) maps section_pk => ticker
-            section_pk's already in this dict will use the tickers already looked up and saved;
-            newly-encountered section_pk's will have their tickers saved here
+            `section_pk`s already in this dict will use the tickers already looked up and saved;
+            newly-encountered `section_pk`s will have their tickers saved here
 
         :return: str --
-                dm.get_company_from_pk(pk).ticker   if that is not None,
-                str(pk) + '-NO_TICKER'              otherwise (actual ticker is None or empty)
+
+                ``dm.get_company_from_pk(pk).ticker``
+                    if that is not ``None``,
+
+                name of company with key ``pk``
+                    otherwise (actual ticker is ``None`` or empty)
         """
         if pk not in pk2ticker_memos:
             company = self.get_company_by_pk(pk)
@@ -384,13 +399,13 @@ class DataMonster(object):
     @staticmethod
     def to_json_checked(filters):
         """
-        Not "private" because Datasource.get_dimensions() uses it too
+        Not "private" because ``Datasource.get_dimensions()`` uses it too
 
         :param filters: dict
-        :return: JSON string encoding `filters`. Normal exit if `filters` is
+        :return: JSON string encoding ``filters``. Normal exit if ``filters`` is
             JSON-serializable.
 
-        :raises: DataMonsterError if `filters` isn't a dict or can't be JSON-encoded.
+        :raises: DataMonsterError if ``filters`` isn't a dict or can't be JSON-encoded.
         """
         if not isinstance(filters, dict):
             raise DataMonsterError(
@@ -407,13 +422,22 @@ class DataMonster(object):
         return self.dimensions_path.format(uuid)
 
 
+
 class DimensionSet(object):
+    """
+    An iterable through a collection of *dimension dicts*, with additional metadata
+    Each dimension dict has these keys:
+    'max_date', 'min_date', 'row_count', 'split_combination'.
+    The first two are dates, as strings in ISO format; `'row_count'` is an int;
+    `'split_combination'` is a dict.
+    """
+
     def __init__(self, url, dm, _convert_pks_to_tickers):
         """
         :param url: (string) URL for REST endpoint
         :param dm: DataMonster object
         :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items
-            to 'tickers' items
+            to 'tickers' items. [For internal use]
         """
         self._url_orig = url
 
@@ -430,20 +454,34 @@ class DimensionSet(object):
 
     @property
     def min_date(self):
+        """min of the ``min_date``\ s of the dimension dicts
+        :return type: str
+        """
         return self._min_date
 
     @property
     def max_date(self):
+        """
+        (str) max of the ``max_date``\ s of the dimension dicts
+        """
         return self._max_date
 
     @property
     def row_count(self):
+        """
+        (int) sum of the ``row_count``\ s of the dimension dicts
+        """
         return self._row_count
 
     def __len__(self):
+        """
+        (int) number of *dimension dicts* in the collection
+        """
         return self._dimension_count
 
     def __iter__(self):
+        """Generator that Iterates through the dimension dicts in the collection.
+        """
         pk2ticker_memos = {}
         while True:
             resp = self._resp       # shorthand

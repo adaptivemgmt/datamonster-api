@@ -46,20 +46,29 @@ class Datasource(BaseClass):
         restricted to `company` (/companies) if given, and filtered by any kwargs items.
         Not memoized, or we'd be holding onto exhausted iterators AND returning them later.
 
-        :param company: a `Company`, a list or tuple of `Company`s, or None.
+        :param company: a `Company`, a list or tuple of `Company`s, or `None`.
             If not None, a filters dict will be used when getting dimensions,
             and it will have a 'section_pk' key, with value
+
                 company.pk               if company is a `Company`,
                 [c.pk for c in company]  if company is a list of `Company`s.
+
         :param kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
 
-        :return: a `DimensionSet` object - say, ``dimset` - an iterable through a collection
-            of dimension dicts, filtered as requested. The object has a additional metadata:
+        :return: a `DimensionSet` object - say, `dimset` - an iterable through a collection
+            of dimension dicts, filtered as requested. The object has additional metadata:
 
-                `max_date`:  (string) max of the `max_date`s of the dimension dicts;
-                `min_date`:  (string) min of the `min_date`s of the dimension dicts;
-                `row_count`:  (int) sum of the `row_count`s of the dimension dicts;
-                `len(dimset)`: (int) number of dimension dicts in the collection
+            `max_date`:
+                (string) max of the `max_date`s of the dimension dicts;
+
+            `min_date`:
+                (string) min of the `min_date`s of the dimension dicts;
+
+            `row_count`:
+                (int) sum of the `row_count`s of the dimension dicts;
+
+            `len(dimset)`:
+                (int) number of dimension dicts in the collection
 
             Each dimension dict has these keys:
             'max_date', 'min_date', 'row_count', 'split_combination'.
@@ -68,18 +77,18 @@ class Datasource(BaseClass):
             things you can filter for using keyword arguments.
 
             EXAMPLE
-            --------
+
             Assuming `dm` is a DataMonster object, and given this datasource and company:
 
                 datasource = next(dm.get_datasources(query='1010data Credit Sales Index'))
                 the_gap = dm.get_company_by_ticker('GPS')
 
-            this call to `get_dimensions`
+            this call to `get_dimensions`::
 
                 dimset = datasource.get_dimensions( company=the_gap,
                                                     category='Banana Republic' )
 
-            returns an iterable, `dimset`, to this list with just one dimensions dict:
+            returns an iterable, `dimset`, to this list with just one dimensions dict::
 
                 {'max_date': '2019-06-21',
                  'min_date': '2014-01-01',
@@ -93,12 +102,15 @@ class Datasource(BaseClass):
             or a list of company primary keys, or None.
 
             We replace this key and its value by a new key `'ticker'`, whose values
-            are tickers of the companies designated by the pk's:
+            are tickers of the companies designated by the pk's::
 
-                dm.get_company_by_pk(pk).ticker       if this is not None
-                str(pk) + '-NO_TICKER'                if the ticker IS None
+            `dm.get_company_from_pk(pk).ticker`
+                if that is not None,
 
-        :raises: can raise DataMonsterError if company is not of an expected type,
+            name of company with key `pk`
+                otherwise (actual ticker is None or empty)
+
+        :raises: can raise ``DataMonsterError`` if company is not of an expected type,
             or if some kwarg item is not JSON-serializable.
         """
         filters = kwargs
