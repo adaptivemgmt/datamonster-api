@@ -373,7 +373,7 @@ class DimensionSet(object):
         (int) number of dimension dicts in the collection
 
     `has_extra_company_info`:
-        (bool) the value passed as `add_company_info_from_pks` to the constructor, converted to `bool`.
+        (bool) the value passed as `add_company_info_from_pks` to the constructor, coerced to `bool`.
 
     `pk2company`:
         (dict) Empty if `has_extra_company_info` is `False`.
@@ -431,8 +431,8 @@ class DimensionSet(object):
         of a dimension dict.)
 
         During an iteration, `pk2company` contains all pk's from `'section_pk'` values in
-        dimension dicts *encountered so far*. Thus, `pk2company` is initially empty, and
-        isn't fully populated until the iteration completes.
+        dimension dicts *that have been yielded so far*. Thus, `pk2company` is initially
+        empty, and isn't fully populated until the iteration completes.
 
         Note that making a `list` of a `DimensionSet` performs a complete iteration.
 
@@ -463,6 +463,9 @@ class DimensionSet(object):
 
     @property
     def has_extra_company_info(self):
+        """
+        (bool) The value passed as `add_company_info_from_pks` to the constructor, coerced to `bool`.
+        """
         return self._add_company_info_from_pks
 
     def __len__(self):
