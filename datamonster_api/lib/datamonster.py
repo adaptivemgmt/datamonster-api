@@ -78,8 +78,6 @@ class DataMonster(object):
         company['uri'] = self._get_company_path(company_id)
         return self._company_result_to_object(company, has_details=True)
 
-    get_company_by_pk = get_company_by_id   # for existing users of `get_company_by_pk`
-
     def get_companies(self, query=None, datasource=None):
         """Get available companies
 
@@ -275,19 +273,7 @@ class DataMonster(object):
             to this method, and calls with _convert_pks_to_tickers=True.
 
         :return: a `DimensionSet` object - say, `dimset` - an iterable through a collection
-            of dimension dicts, filtered as requested. The object has additional metadata:
-
-            `max_date`:
-                (string) max of the `max_date`s of the dimension dicts;
-
-            `min_date`:
-                (string) min of the `min_date`s of the dimension dicts;
-
-            `row_count`:
-                (int) sum of the `row_count`s of the dimension dicts;
-
-            `len(dimset)`:
-                (int) number of dimension dicts in the collection
+            of dimension dicts, filtered as requested.
 
             Each dimension dict has these keys:
             'max_date', 'min_date', 'row_count', 'split_combination'.
@@ -340,63 +326,6 @@ class DataMonster(object):
         # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
         return DimensionSet(url, self, _convert_pks_to_tickers=_convert_pks_to_tickers)
 
-    def _convert_section_pks_to_tickers(self, dimension, pk2ticker_memos):
-        """
-        :param dimension: a dimension dict, with a key 'split_combination'.
-        :param pk2ticker_memos: (dict) maps `section_pk` => `ticker`
-            `section_pk's already in this dict will use the tickers already looked up and saved;
-            new `section_pk`s will have their tickers saved here
-
-        :return: `None`
-        Mutates the dict `dimension:
-            if 'section_pk' in `dimension['split_combination']`, its value::
-
-                dimension['split_combination']['section_pk"]
-
-            is a list of `section_pk`s (though we accommodate a single pk or `None`);
-            we replace each pk with
-
-            `self._pk_to_ticker(pk)`
-                  if ticker is not `None`,
-
-            name of company with key `pk`
-               if ticker is `None`
-        """
-        combo = dimension['split_combination']
-        if 'section_pk' in combo:
-            value = combo.pop('section_pk')
-            if value is not None:           # type: int or list[int]
-                combo['ticker'] = (
-                    self._pk_to_ticker(value, pk2ticker_memos)
-                    if isinstance(value, int) else          # isinstance(value, list) -- List[int] in fact
-                    six.moves.map(lambda pk: self._pk_to_ticker(pk, pk2ticker_memos), value)
-                )
-        return dimension
-
-    def _pk_to_ticker(self, pk, pk2ticker_memos):
-        """
-        :param pk: int -- a section_pk
-        :param pk2ticker_memos: (dict) maps section_pk => ticker
-            `section_pk`s already in this dict will use the tickers already looked up and saved;
-            newly-encountered `section_pk`s will have their tickers saved here
-
-        :return: str --
-
-                `dm.get_company_from_pk(pk).ticker`
-                    if that is not `None`,
-
-                name of company with key `pk`
-                    otherwise (actual ticker is `None` or empty)
-        """
-        if pk not in pk2ticker_memos:
-            company = self.get_company_by_pk(pk)
-            ticker = company.ticker
-            if not ticker:
-                ticker = company.name
-            pk2ticker_memos[pk] = ticker
-
-        return pk2ticker_memos[pk]
-
     @staticmethod
     def to_json_checked(filters):
         """
@@ -426,12 +355,35 @@ class DataMonster(object):
 
 class DimensionSet(object):
     """
-    An iterable through a collection of *dimension dicts*, with additional metadata
+    An iterable through a collection of *dimension dicts*, with additional metadata:
+
+    `max_date`:
+        (string) max of the `max_date`s of the dimension dicts;
+
+    `min_date`:
+        (string) min of the `min_date`s of the dimension dicts;
+
+    `row_count`:
+        (int) sum of the `row_count`s of the dimension dicts;
+
+    `len(dimension_set)`:
+        (int) number of dimension dicts in the collection
+
+    `pk2company`:
+        (dict) mapping from company pk's (int id's) to their corresponding `Company`s,
+        for all pk's in `'section_pk'` items of dimension dicts in the collection.
+        During an iteration, `pk2company` contains all pk's from `'section_pk'` values in
+        dimension dicts *encountered so far*. Thus, `pk2company` is initially empty, and
+        isn't fully populated until the iteration completes.
+
     Each dimension dict has these keys:
     'max_date', 'min_date', 'row_count', 'split_combination'.
     The first two are dates, as strings in ISO format; `'row_count'` is an int;
     `'split_combination'` is a dict.
     """
+    def __str__(self):
+        '{}: {} dimensions, {} rows, from {} to {}'.format(
+            self.__class__.__name__, len(self), self._row_count, self._min_date, self._max_date)
 
     def __init__(self, url, dm, _convert_pks_to_tickers):
         """
@@ -452,6 +404,30 @@ class DimensionSet(object):
 
         self._dm = dm
         self._convert_pks_to_tickers = _convert_pks_to_tickers
+
+        # Populated during iteration,
+        # contents not really "settled" until iteration is complete.
+        # maps section_pks => Company
+        self._pk2company = {}
+
+
+    @property
+    def pk2company(self):
+        """Dict that maps company pk's (int id's) to `Company` objects. If `pk` is a key
+        in the dict, then `self.pk2company[pk].pk == pk`.
+        The pk's in `pk2company` are those in the `'section_pk'` items of dimension dicts
+        in this collection. (`'section_pk'` items are in the `'split_combination'` subdict
+        of a dimension dict.)
+
+        During an iteration, `pk2company` contains all pk's from `'section_pk'` values in
+        dimension dicts *encountered so far*. Thus, `pk2company` is initially empty, and
+        isn't fully populated until the iteration completes.
+
+        Note that making a `list` of a DimensionSet performs a complete iteration.
+
+        :return: (dict)
+        """
+        return self._pk2company
 
     @property
     def min_date(self):
@@ -481,9 +457,13 @@ class DimensionSet(object):
         return self._dimension_count
 
     def __iter__(self):
-        """Generator that Iterates through the dimension dicts in the collection.
+        """Generator that iterates through the dimension dicts in the collection.
+
+        Populates self.pk2company during iteration:
+            `section_pk`s already in this dict will use the tickers (/names) of `Company`s
+            already looked up and saved;
+            newly-encountered `section_pk`s will have their corresponding `Company`s saved here
         """
-        pk2ticker_memos = {}
         while True:
             resp = self._resp       # shorthand
             if not resp:
@@ -497,10 +477,10 @@ class DimensionSet(object):
 
             for dimension in results_this_page:
                 # do `_camel2snake` *before* possible pk->ticker conversion,
-                # as `_convert_section_pks_to_tickers` assumes snake_case
+                # as `_convert_section_pks_to_tickers` assumes snake_case ('split_combination')
                 dimension = DimensionSet._camel2snake(dimension)
                 if self._convert_pks_to_tickers:
-                    self._dm._convert_section_pks_to_tickers(dimension, pk2ticker_memos)
+                    self._convert_section_pks_to_tickers(dimension)
                 yield dimension
 
             if next_page_uri is None:
@@ -524,3 +504,56 @@ class DimensionSet(object):
             'rowCount': 'row_count',
         }
         return {camel2snake[k]: dimension_dict[k] for k in dimension_dict}
+
+    def _convert_section_pks_to_tickers(self, dimension):
+        """
+        :param dimension: a dimension dict, with a key 'split_combination'.
+
+        :return: `None`
+        Mutates the dict `dimension:
+            if 'section_pk' in `dimension['split_combination']`, its value::
+
+                dimension['split_combination']['section_pk"]
+
+            is a 'section_pk'` or a list of them (we accommodate `None`, too).
+            We add a `'ticker'` item to dimension['split_combination'] whose value is
+            the ticker or tickers for the pk's in the value of 'section_pk'` --
+            more precisely, the value corresponding to any `pk` is:
+
+            `self._pk_to_ticker(pk)`
+                  if ticker is not `None`,
+
+            name of company with key `pk`
+               if ticker is `None`
+        """
+        combo = dimension['split_combination']
+        if 'section_pk' in combo:
+            value = combo.get('section_pk')     # type: int or list[int]
+            if value is not None:
+                combo['ticker'] = (
+                    self._pk_to_ticker(value)
+                    if isinstance(value, int) else      # isinstance(value, list) -- List[int] in fact
+                    list(six.moves.map(lambda pk: self._pk_to_ticker(pk), value))
+                )
+        return dimension
+
+    def _pk_to_ticker(self, pk):
+        """
+        :param pk: int -- a section_pk
+
+        :return: str --
+
+            `self._dm.get_company_from_id(pk).ticker`
+                if that is not `None`,
+
+            name of company with key `pk`
+                otherwise (actual ticker is `None` or empty)
+
+            Note that `self._pk2company` basically holds memos for this method: for each `pk`,
+            `self._dm.get_company_from_id(pk)` is only called once.
+        """
+        if pk not in self._pk2company:
+            self._pk2company[pk] = self._dm.get_company_by_id(pk)
+
+        company = self._pk2company[pk]
+        return company.ticker or company.name
