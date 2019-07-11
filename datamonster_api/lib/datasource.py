@@ -41,7 +41,7 @@ class Datasource(BaseClass):
         """
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
-    def get_dimensions(self, company=None, **kwargs):
+    def get_dimensions(self, company=None, add_company_info_from_pks=None, **kwargs):
         """Return the dimensions for this data source,
         restricted to `company` (/companies) if given, and filtered by any kwargs items.
         Not memoized, or we'd be holding onto exhausted iterators AND returning them later.
@@ -52,6 +52,14 @@ class Datasource(BaseClass):
 
                 company.pk               if company is a `Company`,
                 [c.pk for c in company]  if company is a list of `Company`s.
+
+        :param add_company_info_from_pks: If `None` (the default), this method calls
+            `self.dm.get_dimensions_for_datasource(..., add_company_info_from_pks=True)`.
+            If not `None`, this method uses the value passed, calling
+            `self.dm.get_dimensions_for_datasource(..., add_company_info_from_pks=add_company_info_from_pks)`.
+
+            This parameter provides a way to skip the lookup and storage of what can be,
+            for some `Datasource`s, a large number of `Company`s.
 
         :param kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
 
@@ -117,6 +125,8 @@ class Datasource(BaseClass):
             else:
                 raise DataMonsterError(
                     'company argument must be a `Company`, or a list or tuple of `Company`s')
-
+        add_company_info_from_pks = (True
+                                     if add_company_info_from_pks is None else
+                                     bool(add_company_info_from_pks))
         return self.dm.get_dimensions_for_datasource(self, filters=filters,
-                                                     add_company_info_from_pks=True)
+                                                     add_company_info_from_pks=add_company_info_from_pks)
