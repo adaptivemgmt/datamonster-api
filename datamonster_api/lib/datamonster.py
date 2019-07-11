@@ -389,20 +389,12 @@ class DimensionSet(object):
     The first two are dates, as strings in ISO format; `'row_count'` is an int;
     `'split_combination'` is a dict.
     """
-    def __str__(self):
-        has_extra_info_str = '; extra company info' if self.has_extra_company_info else ''
-
-        '{}: {} dimensions, {} rows, from {} to {}{}'.format(
-            self.__class__.__name__,
-            len(self), self._row_count, self._min_date, self._max_date,
-            has_extra_info_str)
-
     def __init__(self, url, dm, add_company_info_from_pks):
         """
         :param url: (string) URL for REST endpoint
         :param dm: DataMonster object
-        :param add_company_info_from_pks: (bool) If True, convert 'section_pk' items
-            to 'tickers' items.
+        :param add_company_info_from_pks: (bool) If True, create ticker items from
+         'section_pk' items.
         """
         self._url_orig = url
 
@@ -421,6 +413,13 @@ class DimensionSet(object):
         # Contents are not "settled" until iteration is complete.
         self._pk2company = {}
 
+    def __str__(self):
+        has_extra_info_str = '; extra company info' if self.has_extra_company_info else ''
+
+        '{}: {} dimensions, {} rows, from {} to {}{}'.format(
+            self.__class__.__name__,
+            len(self), self._row_count, self._min_date, self._max_date,
+            has_extra_info_str)
 
     @property
     def pk2company(self):
@@ -493,10 +492,10 @@ class DimensionSet(object):
 
             for dimension in results_this_page:
                 # do `_camel2snake` *before* possible pk->ticker conversion,
-                # as `_convert_section_pks_to_tickers` assumes snake_case ('split_combination')
+                # as `_create_ticker_items_from_section_pks` assumes snake_case ('split_combination')
                 dimension = DimensionSet._camel2snake(dimension)
                 if self._add_company_info_from_pks:
-                    self._convert_section_pks_to_tickers(dimension)
+                    self._create_ticker_items_from_section_pks(dimension)
                 yield dimension
 
             if next_page_uri is None:
@@ -521,7 +520,7 @@ class DimensionSet(object):
         }
         return {camel2snake[k]: dimension_dict[k] for k in dimension_dict}
 
-    def _convert_section_pks_to_tickers(self, dimension):
+    def _create_ticker_items_from_section_pks(self, dimension):
         """
         :param dimension: a dimension dict, with a key 'split_combination'.
 
