@@ -1,5 +1,3 @@
-import six
-
 from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
