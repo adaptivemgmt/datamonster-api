@@ -462,7 +462,7 @@ class DimensionSet(object):
         """
         return self._row_count
 
-    @property
+    @@property
     def has_extra_company_info(self):
         return self._add_company_info_from_pks
 
