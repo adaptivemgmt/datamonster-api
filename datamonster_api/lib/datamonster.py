@@ -260,7 +260,7 @@ class DataMonster(object):
 
 
     def get_dimensions_for_datasource(self, datasource, filters=None,
-                                      _convert_pks_to_tickers=False):
+                                      add_company_info_from_pks=False):
         """Get dimensions ("splits") for the data source (data fountain)
         from the DataMonster REST endpoint '/datasource/<uuid>/dimensions?filters=...
         where the filters string is optional.
@@ -268,11 +268,14 @@ class DataMonster(object):
         :param datasource: an Oasis data fountain `Datasource`.
         :param filters: ((dict or None): a dict of key/value pairs to filter
                 dimensions by.
-        :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items
-            to 'tickers' items; if False, don't. Datasource.get_dimensions() delegates
-            to this method, and calls with _convert_pks_to_tickers=True.
+        :param add_company_info_from_pks: (bool) If True, create `'ticker'` items
+            from `'section_pk'` items in (`'split_combination'` subdicts of) dimension dicts,
+            and create a mapping from section pk's to `Company`s, available as `pk2company`
+            on the returned `DimensionSet`; if False, don't.
+            `Datasource.get_dimensions()` delegates to this method, and calls with
+            `add_company_info_from_pks=True`.
 
-        :return: a `DimensionSet` object - say, `dimset` - an iterable through a collection
+        :return: a `DimensionSet` object - an iterable through a collection
             of dimension dicts, filtered as requested.
 
             Each dimension dict has these keys:
@@ -324,7 +327,7 @@ class DataMonster(object):
             url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
-        return DimensionSet(url, self, _convert_pks_to_tickers=_convert_pks_to_tickers)
+        return DimensionSet(url, self, add_company_info_from_pks=add_company_info_from_pks)
 
     @staticmethod
     def to_json_checked(filters):
@@ -369,8 +372,13 @@ class DimensionSet(object):
     `len(dimension_set)`:
         (int) number of dimension dicts in the collection
 
+    `has_extra_company_info`:
+        (bool) the value passed as `add_company_info_from_pks` to the constructor, converted to `bool`.
+
     `pk2company`:
-        (dict) mapping from company pk's (int id's) to their corresponding `Company`s,
+        (dict) Empty if `has_extra_company_info` is `False`.
+        If `has_extra_company_info`, this dict maps
+        company pk's (int id's) to their corresponding `Company`s,
         for all pk's in `'section_pk'` items of dimension dicts in the collection.
         During an iteration, `pk2company` contains all pk's from `'section_pk'` values in
         dimension dicts *encountered so far*. Thus, `pk2company` is initially empty, and
@@ -382,15 +390,19 @@ class DimensionSet(object):
     `'split_combination'` is a dict.
     """
     def __str__(self):
-        '{}: {} dimensions, {} rows, from {} to {}'.format(
-            self.__class__.__name__, len(self), self._row_count, self._min_date, self._max_date)
+        has_extra_info_str = '; extra company info' if self.has_extra_company_info else ''
 
-    def __init__(self, url, dm, _convert_pks_to_tickers):
+        '{}: {} dimensions, {} rows, from {} to {}{}'.format(
+            self.__class__.__name__,
+            len(self), self._row_count, self._min_date, self._max_date,
+            has_extra_info_str)
+
+    def __init__(self, url, dm, add_company_info_from_pks):
         """
         :param url: (string) URL for REST endpoint
         :param dm: DataMonster object
-        :param _convert_pks_to_tickers: (bool) If True, convert 'section_pk' items
-            to 'tickers' items. [For internal use]
+        :param add_company_info_from_pks: (bool) If True, convert 'section_pk' items
+            to 'tickers' items.
         """
         self._url_orig = url
 
@@ -403,18 +415,18 @@ class DimensionSet(object):
         self._resp = resp0
 
         self._dm = dm
-        self._convert_pks_to_tickers = _convert_pks_to_tickers
+        self._add_company_info_from_pks = bool(add_company_info_from_pks)
 
-        # Populated during iteration,
-        # contents not really "settled" until iteration is complete.
-        # maps section_pks => Company
+        # Populated during iteration, maps pk => Company.
+        # Contents are not "settled" until iteration is complete.
         self._pk2company = {}
 
 
     @property
     def pk2company(self):
-        """Dict that maps company pk's (int id's) to `Company` objects. If `pk` is a key
-        in the dict, then `self.pk2company[pk].pk == pk`.
+        """Empty if `has_extra_company_info` is `False`.
+        If `has_extra_company_info`, this dict maps company pk's (int id's) to `Company`
+        objects. If `pk` is a key in the dict, then `self.pk2company[pk].pk == pk`.
         The pk's in `pk2company` are those in the `'section_pk'` items of dimension dicts
         in this collection. (`'section_pk'` items are in the `'split_combination'` subdict
         of a dimension dict.)
@@ -423,7 +435,7 @@ class DimensionSet(object):
         dimension dicts *encountered so far*. Thus, `pk2company` is initially empty, and
         isn't fully populated until the iteration completes.
 
-        Note that making a `list` of a DimensionSet performs a complete iteration.
+        Note that making a `list` of a `DimensionSet` performs a complete iteration.
 
         :return: (dict)
         """
@@ -449,6 +461,10 @@ class DimensionSet(object):
         (int) sum of the `row_count`s of the dimension dicts
         """
         return self._row_count
+
+    @@property
+    def has_extra_company_info(self):
+        return self._add_company_info_from_pks
 
     def __len__(self):
         """
@@ -479,7 +495,7 @@ class DimensionSet(object):
                 # do `_camel2snake` *before* possible pk->ticker conversion,
                 # as `_convert_section_pks_to_tickers` assumes snake_case ('split_combination')
                 dimension = DimensionSet._camel2snake(dimension)
-                if self._convert_pks_to_tickers:
+                if self._add_company_info_from_pks:
                     self._convert_section_pks_to_tickers(dimension)
                 yield dimension
 

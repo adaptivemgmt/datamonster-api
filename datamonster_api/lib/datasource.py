@@ -55,21 +55,8 @@ class Datasource(BaseClass):
 
         :param kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
 
-        :return: a `DimensionSet` object - say, `dimset` - an iterable through a collection
-            of dimension dicts, filtered as requested. The object has additional metadata:
-
-            `max_date`:
-                (string) max of the `max_date`s of the dimension dicts;
-
-            `min_date`:
-                (string) min of the `min_date`s of the dimension dicts;
-
-            `row_count`:
-                (int) sum of the `row_count`s of the dimension dicts;
-
-            `len(dimset)`:
-                (int) number of dimension dicts in the collection
-
+        :return: a `DimensionSet` object - an iterable through a collection
+            of dimension dicts, filtered as requested.
             Each dimension dict has these keys:
             'max_date', 'min_date', 'row_count', 'split_combination'.
             The first two are dates, as strings in ISO format; `'row_count'` is an int;
@@ -99,16 +86,16 @@ class Datasource(BaseClass):
 
             In each 'split_combination' subdict as supplied by Oasis, if there is a
             `'section_pk'` key, its value will be a company primary key (pk, an int),
-            or a list of company primary keys, or None.
+            or a list of company primary keys, or `None`.
 
-            We replace this key and its value by a new key `'ticker'`, whose values
-            are tickers of the companies designated by the pk's::
+            We add a new key `'ticker'`, whose values are tickers of the companies
+            designated by the pk or pk's::
 
             `dm.get_company_from_pk(pk).ticker`
                 if that is not None,
 
             name of company with key `pk`
-                otherwise (actual ticker is None or empty)
+                otherwise (actual ticker is `None` or empty)
 
         :raises: can raise `DataMonsterError` if company is not of an expected type,
             or if some kwarg item is not JSON-serializable.
@@ -132,4 +119,4 @@ class Datasource(BaseClass):
                     'company argument must be a `Company`, or a list or tuple of `Company`s')
 
         return self.dm.get_dimensions_for_datasource(self, filters=filters,
-                                                     _convert_pks_to_tickers=True)
+                                                     add_company_info_from_pks=True)
