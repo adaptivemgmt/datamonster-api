@@ -93,7 +93,7 @@ def test_get_companies_by_ticker_1(mocker, dm, multi_page_company_results):
     """Test getting company by ticker"""
 
     # matches case
-    dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
+    dm.client.get = mocker.Mock(side_effect=mxulti_page_company_results)
     company = dm.get_company_by_ticker('c3')
     _assert_object_matches_company(company, multi_page_company_results[1]['results'][0])
 

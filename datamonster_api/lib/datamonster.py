@@ -78,10 +78,13 @@ class DataMonster(object):
         company['uri'] = self._get_company_path(company_id)
         return self._company_result_to_object(company, has_details=True)
 
-    def get_companies(self, query=None, datasource=None):
+    def get_companies(self, query=None, datasource=None, pks=None):
         """Get available companies
 
         :param query: Optional query that will restrict companies by ticker or name
+            If `query` is given, `pks` is ignored
+        :param pks: iterable of section_pk's; if given, and if `query` not given,
+            fetch company info / make Companys for all of these pks (note, list will be ordered by name :( )
         :param datasource: Optional Datasource object that restricts companies to those covered by the given datasource
 
         :return: List of Company objects
@@ -89,6 +92,9 @@ class DataMonster(object):
         params = {}
         if query:
             params['q'] = query
+        elif pks:
+            params['pks'] = ','.join(six.text_type(pk) for pk in pks)
+
         if datasource:
             self._check_param(datasource=datasource)
             params['datasourceId'] = datasource.id
@@ -493,10 +499,30 @@ class DimensionSet(object):
             if not results_this_page:
                 break
 
+            dims_this_page = []
             for dimension in results_this_page:
                 # do `_camel2snake` *before* possible pk->ticker conversion,
                 # as `_create_ticker_items_from_section_pks` assumes snake_case ('split_combination')
                 dimension = DimensionSet._camel2snake(dimension)
+                dims_this_page.append(dimension)
+
+            if self._add_company_info_from_pks:
+                # collect all pk's from 'split_combination' subdicts
+                pks_this_page = set()
+                for dim in dims_this_page:
+                    combo = dim['split_combination']
+                    sec_pk = combo.get('section_pk', None)
+                    if isinstance(sec_pk, int):
+                        pks_this_page.add(sec_pk)
+                    elif isinstance(sec_pk, list):
+                        pks_this_page |= set(sec_pk)
+                # get all Companies for them;
+                # add all to pk2company
+                for company in self._dm.get_companies(pks=pks_this_page):
+                    self._pk2company[company.pk] = company
+
+            # NOW yield the dimensions on this page
+            for dimension in dims_this_page:
                 if self._add_company_info_from_pks:
                     self._create_ticker_items_from_section_pks(dimension)
                 yield dimension
