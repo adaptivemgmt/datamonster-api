@@ -480,6 +480,40 @@ class DimensionSet(object):
         """
         return self._dimension_count
 
+    def _extract_dimensions_and_companies(self, results):
+        """
+        :param results: response['results'], a list of dimension dicts with camelCase keys
+        :return: list of the same dimension dicts, with snake_case'd keys
+
+        Side-effect: collects all pk's in 'section_pk' items of 'split_combination' subdicts
+            of the dimension dicts; gets `Company`s for all of them, batched, and stores
+            the pk => Company mappings in self._pk2company
+        """
+        dims_this_page = list(six.moves.map(DimensionSet._camel2snake, results))
+        ## VS
+        # dims_this_page = []
+        # for dimension in results:
+        #     # do `_camel2snake` *before* possible pk->ticker conversion
+        #     dimension = DimensionSet._camel2snake(dimension)
+        #     dims_this_page.append(dimension)
+
+        if self._add_company_info_from_pks:
+            # collect all pk's from 'split_combination' subdicts
+            pks_this_page = set()
+            for dim in dims_this_page:
+                combo = dim['split_combination']
+                sec_pk = combo.get('section_pk', None)
+                if isinstance(sec_pk, int):
+                    pks_this_page.add(sec_pk)
+                elif isinstance(sec_pk, list):
+                    pks_this_page |= set(sec_pk)
+            # get all Companies for them;
+            # add all to pk2company
+            for company in self._dm.get_companies(pks=pks_this_page):
+                self._pk2company[company.pk] = company
+
+        return dims_this_page
+
     def __iter__(self):
         """Generator that iterates through the dimension dicts in the collection.
 
@@ -499,27 +533,7 @@ class DimensionSet(object):
             if not results_this_page:
                 break
 
-            dims_this_page = []
-            for dimension in results_this_page:
-                # do `_camel2snake` *before* possible pk->ticker conversion,
-                # as `_create_ticker_items_from_section_pks` assumes snake_case ('split_combination')
-                dimension = DimensionSet._camel2snake(dimension)
-                dims_this_page.append(dimension)
-
-            if self._add_company_info_from_pks:
-                # collect all pk's from 'split_combination' subdicts
-                pks_this_page = set()
-                for dim in dims_this_page:
-                    combo = dim['split_combination']
-                    sec_pk = combo.get('section_pk', None)
-                    if isinstance(sec_pk, int):
-                        pks_this_page.add(sec_pk)
-                    elif isinstance(sec_pk, list):
-                        pks_this_page |= set(sec_pk)
-                # get all Companies for them;
-                # add all to pk2company
-                for company in self._dm.get_companies(pks=pks_this_page):
-                    self._pk2company[company.pk] = company
+            dims_this_page = self._extract_dimensions_and_companies(results_this_page)
 
             # NOW yield the dimensions on this page
             for dimension in dims_this_page:
