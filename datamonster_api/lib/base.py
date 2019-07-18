@@ -18,4 +18,4 @@ class BaseClass(object):
         self._details = details
 
     def get_details(self):
-        raise NotImplemented()
+        raise NotImplementedError

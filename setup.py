@@ -5,10 +5,10 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name="datamonster_api",
-    version="0.1.0",
+    version="0.2.0",
     author="Kevin Thompson",
     author_email="kevin@adaptivemgmt.com",
-    description="Library for accessing the datamonster rest API",
+    description="Library for accessing the Datamonster REST API",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/adaptivemgmt/datamonster-api",

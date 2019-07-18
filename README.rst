@@ -9,13 +9,13 @@ Quickstart
 
 Installing Datamonster library
 
-.. code-block:: python
+.. code::
 
         pip install datamonster_api
 
 Working with companies
 
-.. code-block:: python
+.. code::
 
         from datamonster_api import DataMonster
         dm = DataMonster(<key_id>, <secret_key>)
@@ -30,7 +30,7 @@ Working with companies
 
 Working with data sources
 
-.. code-block:: python
+.. code::
 
         print(list(dm.get_datasources(query='1010')))   # Prints all data sources whose name or provider matches '1010'
 
@@ -48,7 +48,7 @@ Working with data sources
 
 Getting data
 
-.. code-block:: python
+.. code::
 
         import datetime
         from datamonster_api import Aggregation

@@ -1,9 +1,7 @@
 import os
 import pytest
 
-from lib.company import Company
-from lib.datamonster import DataMonster
-from lib.datasource import Datasource
+from datamonster_api import DataMonster, Company, Datasource
 
 
 @pytest.fixture
@@ -197,3 +195,119 @@ def datasource_details_result():
 def avro_data_file(datadir):
     with open(os.path.join(datadir, 'avro_data_file'), 'rb') as fp:
         return fp.read()
+
+
+# ------------------------
+# dimensions fixtures
+# ------------------------
+
+__uuid = 'ac3fa676-5934-4d8a-969c-62471e91b710'
+
+@pytest.fixture
+def fake_uuid():
+    return __uuid
+
+
+@pytest.fixture
+def company_with_int_id():
+    return Company('1', 'ticker', 'name', 'uri', None)
+
+
+@pytest.fixture
+def other_company_with_int_id():
+    return Company('2', 'other_ticker', 'other_name', 'other_uri', None)
+
+
+@pytest.fixture
+def single_page_dimensions_result():
+    """ As returned by DM "GET"
+    """
+    return {
+        "pagination": {
+            "totalResults": 3,
+            "pageSize": 100,
+            "currentPage": 0,
+            "nextPageURI": None,
+            "previousPageURI": None,
+        },
+        'results': [{
+            'splitCombination': {'country': 'US', 'category': 'neat', 'section_pk': [1]},
+            'maxDate': '2019-01-01',
+            'minDate': '2015-01-01',
+            'rowCount': 10
+        }, {
+            'splitCombination': {'country': 'UK', 'category': 'swell',
+                                  'section_pk': [2]},
+            'maxDate': '2019-01-01',
+            'minDate': '2015-01-01',
+            'rowCount': 10
+        }, {
+            'splitCombination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
+            'maxDate': '2019-02-01',
+            'minDate': '2015-02-01',
+            'rowCount': 10
+        }],
+        'maxDate': '2019-02-01',
+        'minDate': '2015-01-01',
+        'rowCount': 30,
+        'dimensionCount': 3
+    }
+
+
+@pytest.fixture
+def multi_page_dimensions_results():
+    """ As returned by DM "GET"
+    """
+    return [
+        # page 0
+        {
+            "pagination": {
+                "totalResults": 3,
+                "pageSize": 2,
+                "currentPage": 0,
+                "nextPageURI": '/rest/v1/datasource/__UUID__/dimensions?page=1&pagesize=2',
+                "previousPageURI": None,
+            },
+            'results': [{
+                'splitCombination': {'country': 'US', 'category': 'swell', 'section_pk': [1]},
+                'maxDate': '2019-01-01',
+                'minDate': '2015-01-01',
+                'rowCount': 10
+            }, {
+                'splitCombination': {'country': 'UK', 'category': 'swell', 'section_pk': [2]},
+                'maxDate': '2019-01-01',
+                'minDate': '2015-01-01',
+                'rowCount': 10
+            }],
+            'maxDate': '2019-02-01',
+            'minDate': '2015-01-01',
+            'rowCount': 30,
+            'dimensionCount': 3
+        },
+        # page 1
+        {
+            "pagination": {
+                "totalResults": 3,
+                "pageSize": 1,
+                "currentPage": 1,
+                "nextPageURI": None,
+                "previousPageURI": '/rest/v1/datasource/__UUID__/dimensions?page=0&pagesize=2',
+            },
+            'results': [{
+                'splitCombination': {'country': 'CA', 'category': 'bad', 'section_pk': [3]},
+                'maxDate': '2019-02-01',
+                'minDate': '2015-02-01',
+                'rowCount': 10
+            }],
+            'maxDate': '2019-02-01',
+            'minDate': '2015-01-01',
+            'rowCount': 30,
+            'dimensionCount': 3
+        }
+    ]
+
+
+@pytest.fixture
+def large_filter_dict():
+    N = 500000000   # 500_000_000
+    return {str(i): i for i in range(N)}
