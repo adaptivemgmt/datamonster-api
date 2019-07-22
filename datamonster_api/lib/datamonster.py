@@ -490,12 +490,6 @@ class DimensionSet(object):
             the pk => Company mappings in self._pk2company
         """
         dims_this_page = list(six.moves.map(DimensionSet._camel2snake, results))
-        ## VS
-        # dims_this_page = []
-        # for dimension in results:
-        #     # do `_camel2snake` *before* possible pk->ticker conversion
-        #     dimension = DimensionSet._camel2snake(dimension)
-        #     dims_this_page.append(dimension)
 
         if self._add_company_info_from_pks:
             # collect all pk's from 'split_combination' subdicts
@@ -503,10 +497,12 @@ class DimensionSet(object):
             for dim in dims_this_page:
                 combo = dim['split_combination']
                 sec_pk = combo.get('section_pk', None)
-                if isinstance(sec_pk, int):
+                # Add the *new* pks to pks_this_page
+                if isinstance(sec_pk, int) and sec_pk not in self._pk2company:
                     pks_this_page.add(sec_pk)
                 elif isinstance(sec_pk, list):
-                    pks_this_page |= set(sec_pk)
+                    new_pks = set(sec_pk).difference(self._pk2company)
+                    pks_this_page.update(new_pks)     # pks_this_page |= new_pks
             # get all Companies for them;
             # add all to pk2company
             for company in self._dm.get_companies(pks=pks_this_page):
