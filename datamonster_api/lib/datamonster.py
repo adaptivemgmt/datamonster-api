@@ -2,6 +2,7 @@ import fastavro
 import pandas
 import six
 import json
+from numpy import timedelta64
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -242,17 +243,9 @@ class DataMonster(object):
         df['lowerDate'] = df['lowerDate'].astype('datetime64[ns]')
 
         # Create the timespan. Note we add 1 day because both dates are inclusive
-        df['upperDate'] += pandas.DateOffset(1)
-        df['time_span'] = df['upperDate'] - df['lowerDate']
+        df['time_span'] = df['upperDate'] - df['lowerDate'] + timedelta64(1, 'D')
 
-        # Remove the upperDate to reduce confusion
-        del df['upperDate']
-
-        # Rename the start_date. There's a more performant way to do this somewhere
-        df['start_date'] = df['lowerDate']
-        del df['lowerDate']
-
-        return df
+        return df.rename(columns={'lowerDate': 'start_date', 'upperDate': 'end_date'})
 
     ##############################################
     #           Dimensions methods
