@@ -345,7 +345,8 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
 ##############################################
 
 class __NoCanSerialize(object):
-    pass
+    def __repr__(self):
+        return 'Object of type __NoCanSerialize'
 
 
 def _assert_equal_dimension_dicts(expected, mocked):
@@ -381,8 +382,8 @@ def test_filters_param_not_json_serializable(dm, datasource):
     with pytest.raises(DataMonsterError) as excinfo:
         dm.get_dimensions_for_datasource(datasource, filters={'somekey': __NoCanSerialize()})
 
-    assert ('Problem with filters when getting dimensions: '
-            'Object of type __NoCanSerialize is not JSON serializable') in excinfo.value.args
+    errtext = 'Problem with filters when getting dimensions: Object of type __NoCanSerialize is not JSON serializable'
+    assert errtext in excinfo.value.args
 
 
 def test_get_dimensions_for_datasource_single_page(mocker, dm, single_page_dimensions_result, datasource):
@@ -463,5 +464,5 @@ def test_ds_get_dimensions_bad_kwarg(mocker, dm, company_with_int_id):
     with pytest.raises(DataMonsterError) as excinfo:
         new_datasource.get_dimensions(company=company_with_int_id, widget=__NoCanSerialize())
 
-    assert ('Problem with filters when getting dimensions: '
-            'Object of type __NoCanSerialize is not JSON serializable') in excinfo.value.args
+    errtext = 'Problem with filters when getting dimensions: Object of type __NoCanSerialize is not JSON serializable'
+    assert errtext in excinfo.value.args
