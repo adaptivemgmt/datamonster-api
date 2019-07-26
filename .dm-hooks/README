@@ -1,0 +1,19 @@
+The follow git hooks have been added for the datamonster-api repo to improve the developer coding experience!
+
+Our pre-push hooks include the following:
+- Python's `pre-commit` library to check flake8 and black compliance
+
+To read more about using the `pre-commit` library, installation instructions and such, please see:
+https://ljvmiranda921.github.io/notebook/2018/06/21/precommits-using-black-and-flake8/
+
+
+To use these git hooks, run:
+1. `pip install -r requirements.txt`
+2. `git config core.hooksPath .dm-hooks`
+
+To use the default git hooks (or one's local hooks), run:
+`git config core.hooksPath .git/hooks`
+
+
+TIPS:
+- use `git push --no-verify` to skip over our pre-push hooks!
