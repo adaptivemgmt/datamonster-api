@@ -16,7 +16,7 @@ ID_HASH = "138fd403232d2ddd5efb44317e38bf03"
 # start templated
 CONFIG = u".pre-push-config.yaml"
 HOOK_TYPE = u"pre-push"
-INSTALL_PYTHON = "/usr/local/opt/python@2/bin/python2.7"
+INSTALL_PYTHON = "/usr/local/opt/python3/bin/python3.7"
 SKIP_ON_MISSING_CONFIG = False
 # end templated
 
