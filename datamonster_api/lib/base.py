@@ -4,7 +4,7 @@ class BaseClass(object):
     _details = None
 
     def __repr__(self):
-        return '<{}: {}>'.format(self.__class__.__name__, self.name)
+        return "<{}: {}>".format(self.__class__.__name__, self.name)
 
     def __getattr__(self, name):
         if not self._details:

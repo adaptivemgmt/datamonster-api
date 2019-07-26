@@ -14,8 +14,8 @@ class Company(BaseClass):
         self.dm = dm
 
     def __repr__(self):
-        ticker_str = '[{}] '.format(self.ticker) if self.ticker else ''
-        return '<{}: {}{}>'.format(self.__class__.__name__, ticker_str, self.name)
+        ticker_str = "[{}] ".format(self.ticker) if self.ticker else ""
+        return "<{}: {}{}>".format(self.__class__.__name__, ticker_str, self.name)
 
     def get_details(self):
         """Get details (metadata) for this company
@@ -26,7 +26,7 @@ class Company(BaseClass):
     def datasources(self):
         """Get the data sources for this company
         """
-        if not hasattr(self, '_datasources'):
+        if not hasattr(self, "_datasources"):
             self._datasources = self.dm.get_datasources(company=self)
 
         return self._datasources
