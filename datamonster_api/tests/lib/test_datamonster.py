@@ -222,9 +222,8 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
 
     # Check the columns
     assert len(df.columns) == 5
-    print(sorted(df.columns))
     assert sorted(df.columns) == ['dimensions', 'end_date', 'start_date',
-    'time_span', 'value']
+                                  'time_span', 'value']
 
     # size sanity check
     assert len(df) == 12
