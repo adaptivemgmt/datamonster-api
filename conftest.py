@@ -9,7 +9,7 @@ def datadir():
     """finds the data directory for a test"""
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(script_dir, 'data')
+    return os.path.join(script_dir, 'datamonster_api', 'tests', 'lib', 'data')
 
 
 @pytest.fixture
