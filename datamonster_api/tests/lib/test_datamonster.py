@@ -221,11 +221,10 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     assert dm.client.get.call_args[0][1] == {'Accept': 'avro/binary'}
 
     # Check the columns
-    assert len(df.columns) == 4
-    assert 'dimensions' in df.columns
-    assert 'start_date' in df.columns
-    assert 'time_span' in df.columns
-    assert 'value' in df.columns
+    assert len(df.columns) == 5
+    print(sorted(df.columns))
+    assert sorted(df.columns) == ['dimensions', 'end_date', 'start_date',
+    'time_span', 'value']
 
     # size sanity check
     assert len(df) == 12
@@ -235,12 +234,14 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     assert df.iloc[0]['value'] == 0.318149
     assert df.iloc[0]['start_date'].date() == datetime.date(2018, 1, 5)
     assert df.iloc[0]['time_span'].to_pytimedelta() == datetime.timedelta(days=1)
+    assert df.iloc[0]['end_date'].date() == datetime.date(2018, 1, 5)
 
     # Check the last row
     assert df.iloc[11]['dimensions'] == {'category': u'Acquisition Adjusted'}
     assert df.iloc[11]['value'] == 0.383680
     assert df.iloc[11]['start_date'].date() == datetime.date(2018, 1, 10)
     assert df.iloc[11]['time_span'].to_pytimedelta() == datetime.timedelta(days=1)
+    assert df.iloc[11]['end_date'].date() == datetime.date(2018, 1, 10)
 
 
 def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasource):
