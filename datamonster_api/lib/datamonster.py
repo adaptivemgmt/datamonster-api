@@ -2,6 +2,7 @@ import fastavro
 import pandas
 import six
 import json
+from numpy import timedelta64
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -82,7 +83,8 @@ class DataMonster(object):
         """Get available companies
 
         :param query: Optional query that will restrict companies by ticker or name
-        :param datasource: Optional Datasource object that restricts companies to those covered by the given datasource
+        :param datasource: Optional Datasource object that restricts companies to those
+            covered by the given datasource
 
         :return: List of Company objects
         """
@@ -137,7 +139,8 @@ class DataMonster(object):
         """Get available datasources
 
         :param query: Optional query that will restrict datasources by name or provider name
-        :param company: Optional Company object that restricts datasource to those that cover the given company
+        :param company: Optional Company object that restricts datasource to those that cover
+            the given company
 
         :return: List of Datasource objects
         """
@@ -188,14 +191,18 @@ class DataMonster(object):
             aggregation_sanity_check(aggregation)
             if aggregation.period == 'fiscalQuarter':
                 if aggregation.company is None:
-                    raise DataMonsterError("Company must be specified for a fiscalQuarter aggregation")
+                    raise DataMonsterError("Company must be specified for a fiscalQuarter "
+                                           "aggregation")
                 if aggregation.company.id != company.id:
-                    raise DataMonsterError("Aggregating by the fiscal quarter of a different company not yet supported")
+                    raise DataMonsterError("Aggregating by the fiscal quarter of a different "
+                                           "company not yet supported")
 
             if aggregation.period is not None:
                 params['aggregation'] = aggregation.period
 
-        url = '{}/{}/data?{}'.format(self.datasource_path, datasource.id, six.moves.urllib.parse.urlencode(params))
+        url = '{}/{}/data?{}'.format(self.datasource_path,
+                                     datasource.id,
+                                     six.moves.urllib.parse.urlencode(params))
         headers = {'Accept': 'avro/binary'}
         resp = self.client.get(url, headers)
 
@@ -242,22 +249,13 @@ class DataMonster(object):
         df['lowerDate'] = df['lowerDate'].astype('datetime64[ns]')
 
         # Create the timespan. Note we add 1 day because both dates are inclusive
-        df['upperDate'] += pandas.DateOffset(1)
-        df['time_span'] = df['upperDate'] - df['lowerDate']
+        df['time_span'] = df['upperDate'] - df['lowerDate'] + timedelta64(1, 'D')
 
-        # Remove the upperDate to reduce confusion
-        del df['upperDate']
-
-        # Rename the start_date. There's a more performant way to do this somewhere
-        df['start_date'] = df['lowerDate']
-        del df['lowerDate']
-
-        return df
+        return df.rename(columns={'lowerDate': 'start_date', 'upperDate': 'end_date'})
 
     ##############################################
     #           Dimensions methods
     ##############################################
-
 
     def get_dimensions_for_datasource(self, datasource, filters=None,
                                       add_company_info_from_pks=False):
@@ -342,7 +340,8 @@ class DataMonster(object):
         """
         if not isinstance(filters, dict):
             raise DataMonsterError(
-                "`filters` must be a dict, got {} instead".format(type(filters).__name__)
+                "`filters` must be a dict, got {} instead".format(
+                    type(filters).__name__)
             )
         try:
             return json.dumps(filters)
@@ -353,7 +352,6 @@ class DataMonster(object):
 
     def _get_dimensions_path(self, uuid):
         return self.dimensions_path.format(uuid)
-
 
 
 class DimensionSet(object):
@@ -373,7 +371,8 @@ class DimensionSet(object):
         (int) number of dimension dicts in the collection
 
     `has_extra_company_info`:
-        (bool) the value passed as `add_company_info_from_pks` to the constructor, coerced to `bool`.
+        (bool) the value passed as `add_company_info_from_pks` to the constructor, coerced
+            to `bool`.
 
     `pk2company`:
         (dict) Empty if `has_extra_company_info` is `False`.
@@ -464,7 +463,8 @@ class DimensionSet(object):
     @property
     def has_extra_company_info(self):
         """
-        (bool) The value passed as `add_company_info_from_pks` to the constructor, coerced to `bool`.
+        (bool) The value passed as `add_company_info_from_pks` to the constructor, coerced
+            to `bool`.
         """
         return self._add_company_info_from_pks
 
@@ -495,7 +495,8 @@ class DimensionSet(object):
 
             for dimension in results_this_page:
                 # do `_camel2snake` *before* possible pk->ticker conversion,
-                # as `_create_ticker_items_from_section_pks` assumes snake_case ('split_combination')
+                # as `_create_ticker_items_from_section_pks` assumes snake_case
+                # ('split_combination')
                 dimension = DimensionSet._camel2snake(dimension)
                 if self._add_company_info_from_pks:
                     self._create_ticker_items_from_section_pks(dimension)
@@ -550,7 +551,7 @@ class DimensionSet(object):
             if value is not None:
                 combo['ticker'] = (
                     self._pk_to_ticker(value)
-                    if isinstance(value, int) else      # isinstance(value, list) -- List[int] in fact
+                    if isinstance(value, int) else
                     list(six.moves.map(lambda pk: self._pk_to_ticker(pk), value))
                 )
         return dimension
