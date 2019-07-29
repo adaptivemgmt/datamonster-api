@@ -22,7 +22,7 @@ class Datasource(BaseClass):
     def companies(self):
         """Return the (memoized) companies for this data source.
         """
-        if not hasattr(self, '_companies'):
+        if not hasattr(self, "_companies"):
             self._companies = self.dm.get_companies(datasource=self)
 
         return self._companies
@@ -107,20 +107,26 @@ class Datasource(BaseClass):
         filters = kwargs
         if company:
             if isinstance(company, Company):
-                filters['section_pk'] = company.pk
+                filters["section_pk"] = company.pk
             elif isinstance(company, (list, tuple)):
                 # loop, rather than `all` and a comprehension, for better error reporting
                 pk_list = []
                 for cc in company:
                     if not isinstance(cc, Company):
                         raise DataMonsterError(
-                            'Every item in `company` argument must be a `Company`; {!r} is not'
-                            .format(cc))
+                            "Every item in `company` argument must be a `Company`; {!r} is not".format(
+                                cc
+                            )
+                        )
                     pk_list.append(cc.pk)
-                filters['section_pk'] = pk_list
+                filters["section_pk"] = pk_list
             else:
                 raise DataMonsterError(
-                    'company argument must be a `Company`, or a list or tuple of `Company`s')
+                    "company argument must be a `Company`, or a list or tuple of `Company`s"
+                )
         add_company_info_from_pks = bool(add_company_info_from_pks)
-        return self.dm.get_dimensions_for_datasource(self, filters=filters,
-                                                     add_company_info_from_pks=bool(add_company_info_from_pks))
+        return self.dm.get_dimensions_for_datasource(
+            self,
+            filters=filters,
+            add_company_info_from_pks=bool(add_company_info_from_pks),
+        )
