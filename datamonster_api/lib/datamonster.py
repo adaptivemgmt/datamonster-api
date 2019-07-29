@@ -2,6 +2,7 @@ import fastavro
 import pandas
 import six
 import json
+from numpy import timedelta64
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -9,15 +10,15 @@ from .company import Company
 from .datasource import Datasource
 from .errors import DataMonsterError
 
-__all__ = ["DataMonster", "DimensionSet"]
+__all__ = ['DataMonster', 'DimensionSet']
 
 
 class DataMonster(object):
     """DataMonster object. Main entry point to the library"""
 
-    company_path = "/rest/v1/company"
-    datasource_path = "/rest/v1/datasource"
-    dimensions_path = "/rest/v1/datasource/{}/dimensions"
+    company_path = '/rest/v1/company'
+    datasource_path = '/rest/v1/datasource'
+    dimensions_path = '/rest/v1/datasource/{}/dimensions'
 
     ##############################################
     #           Generic methods
@@ -35,9 +36,9 @@ class DataMonster(object):
         next_page = url
         while next_page is not None:
             resp = self.client.get(next_page)
-            for result in resp["results"]:
+            for result in resp['results']:
                 yield result
-            next_page = resp["pagination"]["nextPageURI"]
+            next_page = resp['pagination']['nextPageURI']
 
     def _check_param(self, company=None, datasource=None):
         if company is not None and not isinstance(company, Company):
@@ -75,27 +76,28 @@ class DataMonster(object):
         :return: Single Company if any company matches the id.  Raises DataMonsterError otherwise.
         """
         company = self.get_company_details(company_id)
-        company["uri"] = self._get_company_path(company_id)
+        company['uri'] = self._get_company_path(company_id)
         return self._company_result_to_object(company, has_details=True)
 
     def get_companies(self, query=None, datasource=None):
         """Get available companies
 
         :param query: Optional query that will restrict companies by ticker or name
-        :param datasource: Optional Datasource object that restricts companies to those covered by the given datasource
+        :param datasource: Optional Datasource object that restricts companies to those
+            covered by the given datasource
 
         :return: List of Company objects
         """
         params = {}
         if query:
-            params["q"] = query
+            params['q'] = query
         if datasource:
             self._check_param(datasource=datasource)
-            params["datasourceId"] = datasource.id
+            params['datasourceId'] = datasource.id
 
         url = self.company_path
         if params:
-            url = "".join([url, "?", six.moves.urllib.parse.urlencode(params)])
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         companies = self._get_paginated_results(url)
         return six.moves.map(self._company_result_to_object, companies)
@@ -114,11 +116,15 @@ class DataMonster(object):
         :param company_id: (str or int)
         :return: URL for REST endpoint that returns details for this company
         """
-        return "{}/{}".format(self.company_path, company_id)
+        return '{}/{}'.format(self.company_path, company_id)
 
     def _company_result_to_object(self, company, has_details=False):
         company_inst = Company(
-            company["id"], company["ticker"], company["name"], company["uri"], self
+            company['id'],
+            company['ticker'],
+            company['name'],
+            company['uri'],
+            self
         )
 
         if has_details:
@@ -133,20 +139,21 @@ class DataMonster(object):
         """Get available datasources
 
         :param query: Optional query that will restrict datasources by name or provider name
-        :param company: Optional Company object that restricts datasource to those that cover the given company
+        :param company: Optional Company object that restricts datasource to those that cover
+            the given company
 
         :return: List of Datasource objects
         """
         params = {}
         if query:
-            params["q"] = query
+            params['q'] = query
         if company:
             self._check_param(company=company)
-            params["companyId"] = company.id
+            params['companyId'] = company.id
 
         url = self.datasource_path
         if params:
-            url = "".join([url, "?", six.moves.urllib.parse.urlencode(params)])
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         datasources = self._get_paginated_results(url)
         return six.moves.map(self._datasource_result_to_object, datasources)
@@ -154,12 +161,10 @@ class DataMonster(object):
     def get_datasource_by_id(self, datasource_id):
         """Given an ID, fill in a datasource"""
         datasource = self.get_datasource_details(datasource_id)
-        datasource["uri"] = self._get_datasource_path(datasource_id)
+        datasource['uri'] = self._get_datasource_path(datasource_id)
         return self._datasource_result_to_object(datasource, has_details=True)
 
-    def get_data(
-        self, datasource, company, aggregation=None, start_date=None, end_date=None
-    ):
+    def get_data(self, datasource, company, aggregation=None, start_date=None, end_date=None):
         """Get data for datasource.
 
         :param datasource: Datasource object to get the data for
@@ -172,35 +177,33 @@ class DataMonster(object):
         """
         self._check_param(company=company, datasource=datasource)
 
-        params = {"companyId": company.id}
+        params = {
+            'companyId': company.id,
+        }
 
         if start_date is not None:
-            params["startDate"] = start_date
+            params['startDate'] = start_date
 
         if end_date is not None:
-            params["endDate"] = end_date
+            params['endDate'] = end_date
 
         if aggregation:
             aggregation_sanity_check(aggregation)
-            if aggregation.period == "fiscalQuarter":
+            if aggregation.period == 'fiscalQuarter':
                 if aggregation.company is None:
-                    raise DataMonsterError(
-                        "Company must be specified for a fiscalQuarter aggregation"
-                    )
+                    raise DataMonsterError("Company must be specified for a fiscalQuarter "
+                                           "aggregation")
                 if aggregation.company.id != company.id:
-                    raise DataMonsterError(
-                        "Aggregating by the fiscal quarter of a different company not yet supported"
-                    )
+                    raise DataMonsterError("Aggregating by the fiscal quarter of a different "
+                                           "company not yet supported")
 
             if aggregation.period is not None:
-                params["aggregation"] = aggregation.period
+                params['aggregation'] = aggregation.period
 
-        url = "{}/{}/data?{}".format(
-            self.datasource_path,
-            datasource.id,
-            six.moves.urllib.parse.urlencode(params),
-        )
-        headers = {"Accept": "avro/binary"}
+        url = '{}/{}/data?{}'.format(self.datasource_path,
+                                     datasource.id,
+                                     six.moves.urllib.parse.urlencode(params))
+        headers = {'Accept': 'avro/binary'}
         resp = self.client.get(url, headers)
 
         return self._avro_to_df(resp)
@@ -215,16 +218,15 @@ class DataMonster(object):
         return self.client.get(path)
 
     def _get_datasource_path(self, datasource_id):
-        return "{}/{}".format(self.datasource_path, datasource_id)
+        return '{}/{}'.format(self.datasource_path, datasource_id)
 
     def _datasource_result_to_object(self, datasource, has_details=False):
         ds_inst = Datasource(
-            datasource["id"],
-            datasource["name"],
-            datasource["category"],
-            datasource["uri"],
-            self,
-        )
+            datasource['id'],
+            datasource['name'],
+            datasource['category'],
+            datasource['uri'],
+            self)
 
         if has_details:
             ds_inst.set_details(datasource)
@@ -243,29 +245,20 @@ class DataMonster(object):
             return df
 
         # Convert date columns to datetime64 columns
-        df["upperDate"] = df["upperDate"].astype("datetime64[ns]")
-        df["lowerDate"] = df["lowerDate"].astype("datetime64[ns]")
+        df['upperDate'] = df['upperDate'].astype('datetime64[ns]')
+        df['lowerDate'] = df['lowerDate'].astype('datetime64[ns]')
 
         # Create the timespan. Note we add 1 day because both dates are inclusive
-        df["upperDate"] += pandas.DateOffset(1)
-        df["time_span"] = df["upperDate"] - df["lowerDate"]
+        df['time_span'] = df['upperDate'] - df['lowerDate'] + timedelta64(1, 'D')
 
-        # Remove the upperDate to reduce confusion
-        del df["upperDate"]
-
-        # Rename the start_date. There's a more performant way to do this somewhere
-        df["start_date"] = df["lowerDate"]
-        del df["lowerDate"]
-
-        return df
+        return df.rename(columns={'lowerDate': 'start_date', 'upperDate': 'end_date'})
 
     ##############################################
     #           Dimensions methods
     ##############################################
 
-    def get_dimensions_for_datasource(
-        self, datasource, filters=None, add_company_info_from_pks=False
-    ):
+    def get_dimensions_for_datasource(self, datasource, filters=None,
+                                      add_company_info_from_pks=False):
         """Get dimensions ("splits") for the data source (data fountain)
         from the DataMonster REST endpoint '/datasource/<uuid>/dimensions?filters=...
         where the filters string is optional.
@@ -325,16 +318,14 @@ class DataMonster(object):
 
         params = {}
         if filters:
-            params["filters"] = self.to_json_checked(filters)
+            params['filters'] = self.to_json_checked(filters)
 
         url = self._get_dimensions_path(uuid=datasource.id)
         if params:
-            url = "".join([url, "?", six.moves.urllib.parse.urlencode(params)])
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
 
         # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
-        return DimensionSet(
-            url, self, add_company_info_from_pks=add_company_info_from_pks
-        )
+        return DimensionSet(url, self, add_company_info_from_pks=add_company_info_from_pks)
 
     @staticmethod
     def to_json_checked(filters):
@@ -350,8 +341,7 @@ class DataMonster(object):
         if not isinstance(filters, dict):
             raise DataMonsterError(
                 "`filters` must be a dict, got {} instead".format(
-                    type(filters).__name__
-                )
+                    type(filters).__name__)
             )
         try:
             return json.dumps(filters)
@@ -381,7 +371,8 @@ class DimensionSet(object):
         (int) number of dimension dicts in the collection
 
     `has_extra_company_info`:
-        (bool) the value passed as `add_company_info_from_pks` to the constructor, coerced to `bool`.
+        (bool) the value passed as `add_company_info_from_pks` to the constructor, coerced
+            to `bool`.
 
     `pk2company`:
         (dict) Empty if `has_extra_company_info` is `False`.
@@ -397,7 +388,6 @@ class DimensionSet(object):
     The first two are dates, as strings in ISO format; `'row_count'` is an int;
     `'split_combination'` is a dict.
     """
-
     def __init__(self, url, dm, add_company_info_from_pks):
         """
         :param url: (string) URL for REST endpoint
@@ -409,10 +399,10 @@ class DimensionSet(object):
 
         resp0 = dm.client.get(url)
 
-        self._min_date = resp0["minDate"]
-        self._max_date = resp0["maxDate"]
-        self._row_count = resp0["rowCount"]
-        self._dimension_count = resp0["dimensionCount"]
+        self._min_date = resp0['minDate']
+        self._max_date = resp0['maxDate']
+        self._row_count = resp0['rowCount']
+        self._dimension_count = resp0['dimensionCount']
         self._resp = resp0
 
         self._dm = dm
@@ -423,18 +413,12 @@ class DimensionSet(object):
         self._pk2company = {}
 
     def __str__(self):
-        has_extra_info_str = (
-            "; extra company info" if self.has_extra_company_info else ""
-        )
+        has_extra_info_str = '; extra company info' if self.has_extra_company_info else ''
 
-        "{}: {} dimensions, {} rows, from {} to {}{}".format(
+        '{}: {} dimensions, {} rows, from {} to {}{}'.format(
             self.__class__.__name__,
-            len(self),
-            self._row_count,
-            self._min_date,
-            self._max_date,
-            has_extra_info_str,
-        )
+            len(self), self._row_count, self._min_date, self._max_date,
+            has_extra_info_str)
 
     @property
     def pk2company(self):
@@ -479,7 +463,8 @@ class DimensionSet(object):
     @property
     def has_extra_company_info(self):
         """
-        (bool) The value passed as `add_company_info_from_pks` to the constructor, coerced to `bool`.
+        (bool) The value passed as `add_company_info_from_pks` to the constructor, coerced
+            to `bool`.
         """
         return self._add_company_info_from_pks
 
@@ -498,19 +483,20 @@ class DimensionSet(object):
             newly-encountered `section_pk`s will have their corresponding `Company`s saved here
         """
         while True:
-            resp = self._resp  # shorthand
+            resp = self._resp       # shorthand
             if not resp:
                 return
 
-            results_this_page = resp["results"]
-            next_page_uri = resp["pagination"]["nextPageURI"]
+            results_this_page = resp['results']
+            next_page_uri = resp['pagination']['nextPageURI']
 
             if not results_this_page:
                 break
 
             for dimension in results_this_page:
                 # do `_camel2snake` *before* possible pk->ticker conversion,
-                # as `_create_ticker_items_from_section_pks` assumes snake_case ('split_combination')
+                # as `_create_ticker_items_from_section_pks` assumes snake_case
+                # ('split_combination')
                 dimension = DimensionSet._camel2snake(dimension)
                 if self._add_company_info_from_pks:
                     self._create_ticker_items_from_section_pks(dimension)
@@ -531,10 +517,10 @@ class DimensionSet(object):
         `dimension_dict` unchanged
         """
         camel2snake = {
-            "splitCombination": "split_combination",
-            "maxDate": "max_date",
-            "minDate": "min_date",
-            "rowCount": "row_count",
+            'splitCombination': 'split_combination',
+            'maxDate': 'max_date',
+            'minDate': 'min_date',
+            'rowCount': 'row_count',
         }
         return {camel2snake[k]: dimension_dict[k] for k in dimension_dict}
 
@@ -559,16 +545,14 @@ class DimensionSet(object):
             name of company with key `pk`
                if ticker is `None`
         """
-        combo = dimension["split_combination"]
-        if "section_pk" in combo:
-            value = combo.get("section_pk")  # type: int or list[int]
+        combo = dimension['split_combination']
+        if 'section_pk' in combo:
+            value = combo.get('section_pk')     # type: int or list[int]
             if value is not None:
-                combo["ticker"] = (
+                combo['ticker'] = (
                     self._pk_to_ticker(value)
-                    if isinstance(value, int)
-                    else list(  # isinstance(value, list) -- List[int] in fact
-                        six.moves.map(lambda pk: self._pk_to_ticker(pk), value)
-                    )
+                    if isinstance(value, int) else
+                    list(six.moves.map(lambda pk: self._pk_to_ticker(pk), value))
                 )
         return dimension
 
