@@ -236,7 +236,7 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/data?companyId={}".format(
+    expected_path = "/rest/v1/datasource/{}/rawdata?companyId={}".format(
         datasource.id, company.id
     )
     assert dm.client.get.call_count == 1
@@ -253,21 +253,21 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
         "value",
     ]
     # size sanity check
-    assert len(df) == 12
+    assert len(df) == 8
 
     # Check the first row
-    assert df.iloc[0]["dimensions"] == {"category": u""}
-    assert df.iloc[0]["value"] == 0.318149
-    assert df.iloc[0]["start_date"].date() == datetime.date(2018, 1, 5)
+    assert df.iloc[0]["dimensions"] == {"category": "Amazon ex. Whole Foods"}
+    assert df.iloc[0]["value"] == 38.516589606814101
+    assert df.iloc[0]["start_date"].date() == datetime.date(2019, 1, 2)
     assert df.iloc[0]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
-    assert df.iloc[0]["end_date"].date() == datetime.date(2018, 1, 5)
+    assert df.iloc[0]["end_date"].date() == datetime.date(2019, 1, 2)
 
     # Check the last row
-    assert df.iloc[11]["dimensions"] == {"category": u"Acquisition Adjusted"}
-    assert df.iloc[11]["value"] == 0.383680
-    assert df.iloc[11]["start_date"].date() == datetime.date(2018, 1, 10)
-    assert df.iloc[11]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
-    assert df.iloc[11]["end_date"].date() == datetime.date(2018, 1, 10)
+    assert df.iloc[7]["dimensions"] == {"category": "Amazon Acquisition Adjusted"}
+    assert df.iloc[7]["value"] == 40.692421507668499
+    assert df.iloc[7]["start_date"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[7]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
+    assert df.iloc[7]["end_date"].date() == datetime.date(2019, 1, 2)
 
 
 def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasource):
@@ -320,7 +320,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["month"]
     assert query["companyId"] == [company.id]
@@ -334,7 +334,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["fiscalQuarter"]
     assert query["companyId"] == [company.id]
@@ -352,7 +352,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
     assert query["aggregation"] == ["month"]
     assert query["companyId"] == [company.id]
@@ -371,7 +371,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
     assert query["companyId"] == [company.id]
     assert query["startDate"] == ["2000-01-01"]

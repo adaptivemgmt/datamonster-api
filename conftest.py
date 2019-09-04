@@ -214,8 +214,13 @@ def datasource_details_result():
 
 @pytest.fixture
 def avro_data_file(datadir):
+    class MockResponse(object):
+        def __init__(self, header, content):
+            self.headers = header
+            self.content = content
+
     with open(os.path.join(datadir, "avro_data_file"), "rb") as fp:
-        return fp.read()
+        return MockResponse({"split_columns": "category"}, fp.read())
 
 
 # ------------------------

@@ -3,6 +3,7 @@ import fastavro
 import pandas
 import six
 import json
+from numpy import timedelta64
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -253,16 +254,10 @@ class DataMonster(object):
         """
 
         def parse_row(row, data_column):
-            start_date = pandas.to_datetime(row["period_start"])
-            # Oasis presents data with a time offset
-            end_date = pandas.to_datetime(row["period_end"]) - datetime.timedelta(
-                days=1
-            )
             return {
                 "value": row[data_column],
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-                "time_span": (end_date - start_date + datetime.timedelta(days=1)).days,
+                "start_date": row["period_start"],
+                "end_date": row["period_end"],
                 "dimensions": {
                     split_key: row[split_key] for split_key in split_columns
                 },
@@ -276,9 +271,20 @@ class DataMonster(object):
             )
 
         records = [r for r in reader]
-        if records:
-            records = [parse_row(row, metadata["value"][0]) for row in records]
-        return pandas.DataFrame.from_records(records)
+
+        if not records:
+            return pandas.DataFrame.from_records(records)
+
+        records = [parse_row(row, metadata["value"][0]) for row in records]
+
+        df = pandas.DataFrame.from_records(records)
+        df["start_date"] = df["start_date"].astype("datetime64[ns]")
+        df["end_date"] = df["end_date"].astype("datetime64[ns]")
+        # Create the timespan. Note we add 1 day because both dates are inclusive
+        df["end_date"] -= datetime.timedelta(days=1)
+        df["time_span"] = df["end_date"] - df["start_date"] + timedelta64(1, "D")
+
+        return df
 
     ##############################################
     #           Dimensions methods
