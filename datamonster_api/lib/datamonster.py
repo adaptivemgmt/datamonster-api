@@ -239,7 +239,11 @@ class DataMonster(object):
         headers = {"Accept": "avro/binary"}
         url = self._get_rawdata_path(datasource.id, params)
         resp = self.client.get(url, headers, stream=True)
-        split_columns = resp.headers['split_columns'].split(',') if resp.headers['split_columns'] else []
+        split_columns = (
+            resp.headers["split_columns"].split(",")
+            if resp.headers["split_columns"]
+            else []
+        )
         return self._avro_to_df(resp.content, split_columns)
 
     def _avro_to_df(self, avro_buffer, split_columns):
@@ -247,26 +251,33 @@ class DataMonster(object):
 
         Transforms dates and columns to a stanard and agreed upon format
         """
+
         def parse_row(row, data_column):
-            start_date = pandas.to_datetime(row['period_start'])
+            start_date = pandas.to_datetime(row["period_start"])
             # Oasis presents data with a time offset
-            end_date = pandas.to_datetime(row['period_end']) - datetime.timedelta(days=1)
-            return {'value': row[data_column],
-                    'start_date': start_date.isoformat(),
-                    'end_date': end_date.isoformat(),
-                    'time_span': (end_date - start_date + datetime.timedelta(days=1)).days,
-                    'dimensions': {split_key: row[split_key]
-                                   for split_key in split_columns}
-                    }
+            end_date = pandas.to_datetime(row["period_end"]) - datetime.timedelta(
+                days=1
+            )
+            return {
+                "value": row[data_column],
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "time_span": (end_date - start_date + datetime.timedelta(days=1)).days,
+                "dimensions": {
+                    split_key: row[split_key] for split_key in split_columns
+                },
+            }
 
         reader = fastavro.reader(six.BytesIO(avro_buffer))
-        metadata = reader.schema['structure']
+        metadata = reader.schema["structure"]
         if not metadata:
-            raise DataMonsterError('DataMonster does not currently support this request')
+            raise DataMonsterError(
+                "DataMonster does not currently support this request"
+            )
 
         records = [r for r in reader]
         if records:
-            records = [parse_row(row, metadata['value'][0]) for row in records]
+            records = [parse_row(row, metadata["value"][0]) for row in records]
         return pandas.DataFrame.from_records(records)
 
     ##############################################
