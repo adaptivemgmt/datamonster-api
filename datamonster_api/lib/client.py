@@ -27,7 +27,7 @@ class Client(object):
             secret_binary, msg_to_hash.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
-    def get(self, path, headers=None):
+    def get(self, path, headers=None, stream=False):
         """
         :param path: (six.text_type)
         :param headers: (dict or None) Additional header items.
@@ -54,7 +54,7 @@ class Client(object):
         session.headers.update(headers)
 
         url = "{}{}".format(self.server, path)
-        resp = session.get(url, verify=self.verify)
+        resp = session.get(url, verify=self.verify, stream=stream)
 
         if resp.status_code != 200:
             raise DataMonsterError(resp.content)
@@ -62,7 +62,7 @@ class Client(object):
         if resp.headers["Content-Type"] == "application/json":
             return resp.json()
         elif resp.headers["Content-Type"] == "avro/binary":
-            return resp.content
+            return resp
         else:
             raise DataMonsterError(
                 "Unexpected content type: {}".format(resp.headers["Content-Type"])
