@@ -240,11 +240,7 @@ class DataMonster(object):
         headers = {"Accept": "avro/binary"}
         url = self._get_rawdata_path(datasource.id, params)
         resp = self.client.get(url, headers, stream=True)
-        split_columns = (
-            resp.headers["split_columns"].split(",")
-            if resp.headers["split_columns"]
-            else []
-        )
+        split_columns = datasource.get_details()['splitColumns']
         return self._avro_to_df(resp.content, split_columns)
 
     def _avro_to_df(self, avro_buffer, split_columns):

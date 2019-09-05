@@ -4,7 +4,7 @@ from .company import Company
 from .errors import DataMonsterError
 
 
-aggregation_periods = {"none", "week", "month", "quarter", "fiscalQuarter", "year"}
+aggregation_periods = {"week", "month", "quarter", "fiscalQuarter", "year"}
 
 Aggregation = namedtuple("Aggregation", ["period", "company"])
 

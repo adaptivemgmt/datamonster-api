@@ -232,6 +232,7 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     """Test getting data -- happy case"""
 
     dm.client.get = mocker.Mock(return_value=avro_data_file)
+    datasource.get_details = mocker.Mock(return_value={'splitColumns': ['category']})
 
     df = dm.get_data(datasource, company)
 
@@ -272,7 +273,6 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
 
 def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasource):
     """Test getting data -- bad aggregations"""
-
     # ** aggregation period is invalid
     agg = Aggregation(period=123, company=None)
     with pytest.raises(DataMonsterError) as excinfo:
@@ -313,6 +313,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
 
     # ** monthly aggregation
     dm.client.get = mocker.Mock(return_value=avro_data_file)
+    datasource.get_details = mocker.Mock(return_value={'splitColumns': ['category']})
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg)
@@ -345,6 +346,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
 
     # ** monthly aggregation, start date
     dm.client.get = mocker.Mock(return_value=avro_data_file)
+    datasource.get_details = mocker.Mock(return_value={'splitColumns': ['category']})
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg, start_date=datetime.date(2000, 1, 1))
