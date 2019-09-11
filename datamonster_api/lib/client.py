@@ -45,8 +45,12 @@ class Client(object):
 
         # Probably should fix this on the server to keep the get params in the hash
         hash_path = path.split("?")[0]
-        hash_str = self.compute_hash_string(method, hash_path, date_str, self.secret)
-
+        try:
+            hash_str = self.compute_hash_string(
+                method, hash_path, date_str, self.secret
+            )
+        except ValueError:
+            raise ValueError("Bad key provided")
         session = requests.Session()
         session.headers["Date"] = date_str
         session.headers["Authorization"] = "DM {}:{}".format(self.key_id, hash_str)
