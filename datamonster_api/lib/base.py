@@ -1,5 +1,4 @@
 class BaseClass(object):
-    """Base of Datasource and Company"""
 
     _details = None
 
