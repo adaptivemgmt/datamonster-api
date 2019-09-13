@@ -31,7 +31,7 @@ def python_environment(
 
     # If the path already exists, we're done. Return now
     if os.path.exists(path_to_virtual_env):
-        print("path_to_virtual_env:", path_to_virtual_env)
+        print("path_to_virtual_env: {}".format(path_to_virtual_env))
         return
 
     # Make the base dir if it doesn't exist
@@ -43,4 +43,4 @@ def python_environment(
         local("{}/pip install --upgrade pip".format(bin_dir))
         local("{}/pip install -r {}".format(bin_dir, path_to_requirements))
         local("virtualenv --relocatable {}".format(dir_name))
-        print("path_to_virtual_env:", path_to_virtual_env)
+        print("path_to_virtual_env: {}".format(path_to_virtual_env))
