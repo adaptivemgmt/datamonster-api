@@ -257,11 +257,11 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     assert len(df) == 8
 
     # Check the first row
-    assert df.iloc[0]["dimensions"] == {"category": "Amazon ex. Whole Foods"}
-    assert df.iloc[0]["value"] == 38.516589606814101
-    assert df.iloc[0]["start_date"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[0]["dimensions"] == {"category": "Whole Foods"}
+    assert df.iloc[0]["value"] == 52.6278787878788
+    assert df.iloc[0]["start_date"].date() == datetime.date(2019, 1, 1)
     assert df.iloc[0]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
-    assert df.iloc[0]["end_date"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[0]["end_date"].date() == datetime.date(2019, 1, 1)
 
     # Check the last row
     assert df.iloc[7]["dimensions"] == {"category": "Amazon Acquisition Adjusted"}
