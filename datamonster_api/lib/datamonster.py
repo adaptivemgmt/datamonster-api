@@ -1,8 +1,8 @@
+import datetime
 import fastavro
 import pandas
 import six
 import json
-from numpy import timedelta64
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -19,6 +19,9 @@ class DataMonster(object):
     company_path = "/rest/v1/company"
     datasource_path = "/rest/v1/datasource"
     dimensions_path = "/rest/v1/datasource/{}/dimensions"
+    rawdata_path = "{}/rawdata?{}"
+
+    REQUIRED_FIELDS = {"lower_date", "upper_date", "value"}
 
     ##############################################
     #           Generic methods
@@ -40,7 +43,8 @@ class DataMonster(object):
                 yield result
             next_page = resp["pagination"]["nextPageURI"]
 
-    def _check_param(self, company=None, datasource=None):
+    @staticmethod
+    def _check_param(company=None, datasource=None):
         if company is not None and not isinstance(company, Company):
             raise DataMonsterError("company argument must be a Company object")
 
@@ -160,6 +164,41 @@ class DataMonster(object):
         datasource["uri"] = self._get_datasource_path(datasource_id)
         return self._datasource_result_to_object(datasource, has_details=True)
 
+    def get_datasource_details(self, datasource_id):
+        """Get details (metadata) for the given datasource
+
+        :param datasource_id: The ID of the datasource for which we get the details
+        :return: dictionary object with the datasource details
+        """
+        path = self._get_datasource_path(datasource_id)
+        return self.client.get(path)
+
+    def _get_datasource_path(self, datasource_id):
+        return "{}/{}".format(self.datasource_path, datasource_id)
+
+    def _get_rawdata_path(self, datasource_id, params):
+        return self.rawdata_path.format(
+            self._get_datasource_path(datasource_id),
+            six.moves.urllib.parse.urlencode(params),
+        )
+
+    def _get_dimensions_path(self, uuid):
+        return self.dimensions_path.format(uuid)
+
+    def _datasource_result_to_object(self, datasource, has_details=False):
+        ds_inst = Datasource(
+            datasource["id"],
+            datasource["name"],
+            datasource["category"],
+            datasource["uri"],
+            self,
+        )
+
+        if has_details:
+            ds_inst.set_details(datasource)
+
+        return ds_inst
+
     def get_data(
         self, datasource, company, aggregation=None, start_date=None, end_date=None
     ):
@@ -173,6 +212,7 @@ class DataMonster(object):
 
         :return: pandas DataFrame
         """
+        # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
         params = {"companyId": company.id}
@@ -199,61 +239,56 @@ class DataMonster(object):
             if aggregation.period is not None:
                 params["aggregation"] = aggregation.period
 
-        url = "{}/{}/data?{}".format(
-            self.datasource_path,
-            datasource.id,
-            six.moves.urllib.parse.urlencode(params),
-        )
         headers = {"Accept": "avro/binary"}
-        resp = self.client.get(url, headers)
+        url = self._get_rawdata_path(datasource.id, params)
+        resp = self.client.get(url, headers, stream=True)
+        split_columns = datasource.get_details()["splitColumns"]
+        return self._avro_to_df(resp.content, split_columns)
 
-        return self._avro_to_df(resp)
-
-    def get_datasource_details(self, datasource_id):
-        """Get details (metadata) for the given datasource
-
-        :param datasource_id: The ID of the datasource for which we get the details
-        :return: dictionary object with the datasource details
-        """
-        path = self._get_datasource_path(datasource_id)
-        return self.client.get(path)
-
-    def _get_datasource_path(self, datasource_id):
-        return "{}/{}".format(self.datasource_path, datasource_id)
-
-    def _datasource_result_to_object(self, datasource, has_details=False):
-        ds_inst = Datasource(
-            datasource["id"],
-            datasource["name"],
-            datasource["category"],
-            datasource["uri"],
-            self,
-        )
-
-        if has_details:
-            ds_inst.set_details(datasource)
-
-        return ds_inst
-
-    def _avro_to_df(self, avro_buffer):
+    def _avro_to_df(self, avro_buffer, split_columns):
         """Read an avro structure into a dataframe
+
+        Transforms dates and columns to a stanard and agreed upon format
         """
-        fp = six.BytesIO(avro_buffer)
-        reader = fastavro.reader(fp)
+
+        def parse_row(row, data_col, start_col, end_col):
+            return {
+                "value": row[data_col],
+                "start_date": pandas.to_datetime(row[start_col]),
+                "end_date": pandas.to_datetime(row[end_col]),
+                "dimensions": {
+                    split_key: row[split_key] for split_key in split_columns
+                },
+            }
+
+        reader = fastavro.reader(six.BytesIO(avro_buffer))
+        metadata = reader.schema["structure"]
+        if not metadata:
+            raise DataMonsterError(
+                "DataMonster does not currently support this request"
+            )
+
+        if not set(metadata.keys()).issuperset(self.REQUIRED_FIELDS):
+            raise DataMonsterError(
+                "DataMonster does not currently support this request"
+            )
+
         records = [r for r in reader]
+
+        if not records:
+            return pandas.DataFrame.from_records(records)
+
+        start_col, end_col, data_col = [
+            metadata[col].pop() for col in self.REQUIRED_FIELDS
+        ]
+        records = [parse_row(row, data_col, start_col, end_col) for row in records]
+
         df = pandas.DataFrame.from_records(records)
+        df["time_span"] = df["end_date"] - df["start_date"]
+        # Change end_date to be inclusive
+        df["end_date"] -= datetime.timedelta(days=1)
 
-        if len(df) == 0:
-            return df
-
-        # Convert date columns to datetime64 columns
-        df["upperDate"] = df["upperDate"].astype("datetime64[ns]")
-        df["lowerDate"] = df["lowerDate"].astype("datetime64[ns]")
-
-        # Create the timespan. Note we add 1 day because both dates are inclusive
-        df["time_span"] = df["upperDate"] - df["lowerDate"] + timedelta64(1, "D")
-
-        return df.rename(columns={"lowerDate": "start_date", "upperDate": "end_date"})
+        return df.sort_values(by="end_date")
 
     ##############################################
     #           Dimensions methods
@@ -355,9 +390,6 @@ class DataMonster(object):
             raise DataMonsterError(
                 "Problem with filters when getting dimensions: {}".format(e)
             )
-
-    def _get_dimensions_path(self, uuid):
-        return self.dimensions_path.format(uuid)
 
 
 class DimensionSet(object):
