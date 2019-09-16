@@ -51,7 +51,7 @@ class Company(BaseClass):
         """
         :return: (str) the section type
         """
-        return self._params["section_type"]
+        return self._params["type"]
 
     @property
     def pk(self):
