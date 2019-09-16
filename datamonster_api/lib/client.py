@@ -27,7 +27,7 @@ class Client(object):
             secret_binary, msg_to_hash.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
-    def get(self, path, headers=None):
+    def get(self, path, headers=None, stream=False):
         """
         :param path: (six.text_type) url path
         :param headers: (dict or None) Additional optional header items
@@ -45,8 +45,12 @@ class Client(object):
 
         # Probably should fix this on the server to keep the get params in the hash
         hash_path = path.split("?")[0]
-        hash_str = self.compute_hash_string(method, hash_path, date_str, self.secret)
-
+        try:
+            hash_str = self.compute_hash_string(
+                method, hash_path, date_str, self.secret
+            )
+        except ValueError:
+            raise ValueError("Bad key provided")
         session = requests.Session()
         session.headers["Date"] = date_str
         session.headers["Authorization"] = "DM {}:{}".format(self.key_id, hash_str)
@@ -54,7 +58,7 @@ class Client(object):
         session.headers.update(headers)
 
         url = "{}{}".format(self.server, path)
-        resp = session.get(url, verify=self.verify)
+        resp = session.get(url, verify=self.verify, stream=stream)
 
         if resp.status_code != 200:
             raise DataMonsterError(resp.content)
@@ -62,7 +66,7 @@ class Client(object):
         if resp.headers["Content-Type"] == "application/json":
             return resp.json()
         elif resp.headers["Content-Type"] == "avro/binary":
-            return resp.content
+            return resp
         else:
             raise DataMonsterError(
                 "Unexpected content type: {}".format(resp.headers["Content-Type"])

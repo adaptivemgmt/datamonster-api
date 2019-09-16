@@ -99,14 +99,14 @@ def test_get_datasource_by_id(mocker, dm, datasource_details_result):
 
 def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     """Test getting data -- happy case"""
-
     dm._client.get = mocker.Mock(return_value=avro_data_file)
+    datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
 
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/data?companyId={}".format(
-        datasource._id, company._id
+    expected_path = "/rest/v1/datasource/{}/rawdata?companyId={}".format(
+        datasource.id, company.id
     )
     assert dm._client.get.call_count == 1
     assert dm._client.get.call_args[0][0] == expected_path
@@ -122,26 +122,25 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
         "value",
     ]
     # size sanity check
-    assert len(df) == 12
+    assert len(df) == 8
 
     # Check the first row
-    assert df.iloc[0]["dimensions"] == {"category": u""}
-    assert df.iloc[0]["value"] == 0.318149
-    assert df.iloc[0]["start_date"].date() == datetime.date(2018, 1, 5)
+    assert df.iloc[0]["dimensions"] == {"category": "Whole Foods"}
+    assert df.iloc[0]["value"] == 52.6278787878788
+    assert df.iloc[0]["start_date"].date() == datetime.date(2019, 1, 1)
     assert df.iloc[0]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
-    assert df.iloc[0]["end_date"].date() == datetime.date(2018, 1, 5)
+    assert df.iloc[0]["end_date"].date() == datetime.date(2019, 1, 1)
 
     # Check the last row
-    assert df.iloc[11]["dimensions"] == {"category": u"Acquisition Adjusted"}
-    assert df.iloc[11]["value"] == 0.383680
-    assert df.iloc[11]["start_date"].date() == datetime.date(2018, 1, 10)
-    assert df.iloc[11]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
-    assert df.iloc[11]["end_date"].date() == datetime.date(2018, 1, 10)
+    assert df.iloc[7]["dimensions"] == {"category": "Amazon Acquisition Adjusted"}
+    assert df.iloc[7]["value"] == 40.692421507668499
+    assert df.iloc[7]["start_date"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[7]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
+    assert df.iloc[7]["end_date"].date() == datetime.date(2019, 1, 2)
 
 
 def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasource):
     """Test getting data -- bad aggregations"""
-
     # ** aggregation period is invalid
     agg = Aggregation(period=123, company=None)
     with pytest.raises(DataMonsterError) as excinfo:
@@ -182,6 +181,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
 
     # ** monthly aggregation
     dm._client.get = mocker.Mock(return_value=avro_data_file)
+    datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg)
@@ -189,7 +189,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["month"]
     assert query["companyId"] == [company._id]
@@ -203,7 +203,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["fiscalQuarter"]
     assert query["companyId"] == [company._id]
@@ -214,6 +214,8 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
 
     # ** monthly aggregation, start date
     dm._client.get = mocker.Mock(return_value=avro_data_file)
+    datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
+
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg, start_date=datetime.date(2000, 1, 1))
@@ -221,7 +223,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
     assert query["aggregation"] == ["month"]
     assert query["companyId"] == [company._id]
@@ -240,7 +242,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/data".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
     assert query["companyId"] == [company._id]
     assert query["startDate"] == ["2000-01-01"]
