@@ -3,7 +3,6 @@ import fastavro
 import pandas
 import six
 import json
-from numpy import timedelta64
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
@@ -21,6 +20,8 @@ class DataMonster(object):
     datasource_path = "/rest/v1/datasource"
     dimensions_path = "/rest/v1/datasource/{}/dimensions"
     rawdata_path = "{}/rawdata?{}"
+
+    REQUIRED_FIELDS = {"lower_date", "upper_date", "value"}
 
     ##############################################
     #           Generic methods
@@ -169,7 +170,8 @@ class DataMonster(object):
         :param datasource_id: The ID of the datasource for which we get the details
         :return: dictionary object with the datasource details
         """
-        return self.client.get(self._get_datasource_path(datasource_id))
+        path = self._get_datasource_path(datasource_id)
+        return self.client.get(path)
 
     def _get_datasource_path(self, datasource_id):
         return "{}/{}".format(self.datasource_path, datasource_id)
@@ -249,11 +251,11 @@ class DataMonster(object):
         Transforms dates and columns to a stanard and agreed upon format
         """
 
-        def parse_row(row, data_column):
+        def parse_row(row, data_col, start_col, end_col):
             return {
-                "value": row[data_column],
-                "start_date": row["period_start"],
-                "end_date": row["period_end"],
+                "value": row[data_col],
+                "start_date": pandas.to_datetime(row[start_col]),
+                "end_date": pandas.to_datetime(row[end_col]),
                 "dimensions": {
                     split_key: row[split_key] for split_key in split_columns
                 },
@@ -266,19 +268,25 @@ class DataMonster(object):
                 "DataMonster does not currently support this request"
             )
 
+        if not set(metadata.keys()).issuperset(self.REQUIRED_FIELDS):
+            raise DataMonsterError(
+                "DataMonster does not currently support this request"
+            )
+
         records = [r for r in reader]
 
         if not records:
             return pandas.DataFrame.from_records(records)
 
-        records = [parse_row(row, metadata["value"][0]) for row in records]
+        start_col, end_col, data_col = [
+            metadata[col].pop() for col in self.REQUIRED_FIELDS
+        ]
+        records = [parse_row(row, data_col, start_col, end_col) for row in records]
 
         df = pandas.DataFrame.from_records(records)
-        df["start_date"] = df["start_date"].astype("datetime64[ns]")
-        df["end_date"] = df["end_date"].astype("datetime64[ns]")
-        # Create the timespan. Note we add 1 day because both dates are inclusive
+        df["time_span"] = df["end_date"] - df["start_date"]
+        # Change end_date to not be inclusive
         df["end_date"] -= datetime.timedelta(days=1)
-        df["time_span"] = df["end_date"] - df["start_date"] + timedelta64(1, "D")
 
         return df
 
