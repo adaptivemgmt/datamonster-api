@@ -165,7 +165,7 @@ class DataMonster(object):
         :return: dictionary object with the datasource details
         """
         path = self._get_datasource_path(datasource_id)
-        return self.client.get(path)
+        return self._client.get(path)
 
     def _get_datasource_path(self, datasource_id):
         return "{}/{}".format(self.datasource_path, datasource_id)
@@ -203,7 +203,7 @@ class DataMonster(object):
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
-        params = {"companyId": company.id}
+        params = {"companyId": company._id}
 
         if start_date is not None:
             params["startDate"] = start_date
@@ -218,7 +218,7 @@ class DataMonster(object):
                     raise DataMonsterError(
                         "Company must be specified for a fiscalQuarter " "aggregation"
                     )
-                if aggregation.company.id != company.id:
+                if aggregation.company._id != company._id:
                     raise DataMonsterError(
                         "Aggregating by the fiscal quarter of a different "
                         "company not yet supported"
@@ -228,8 +228,8 @@ class DataMonster(object):
                 params["aggregation"] = aggregation.period
 
         headers = {"Accept": "avro/binary"}
-        url = self._get_rawdata_path(datasource.id, params)
-        resp = self.client.get(url, headers, stream=True)
+        url = self._get_rawdata_path(datasource._id, params)
+        resp = self._client.get(url, headers, stream=True)
         split_columns = datasource.get_details()["splitColumns"]
         return self._avro_to_df(resp.content, split_columns)
 

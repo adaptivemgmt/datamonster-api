@@ -106,7 +106,7 @@ def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
 
     # Check that we called the client correctly
     expected_path = "/rest/v1/datasource/{}/rawdata?companyId={}".format(
-        datasource.id, company.id
+        datasource._id, company._id
     )
     assert dm._client.get.call_count == 1
     assert dm._client.get.call_args[0][0] == expected_path
@@ -189,7 +189,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
     assert len(query) == 2
     assert query["aggregation"] == ["month"]
     assert query["companyId"] == [company._id]
@@ -203,7 +203,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
     assert len(query) == 2
     assert query["aggregation"] == ["fiscalQuarter"]
     assert query["companyId"] == [company._id]
@@ -223,7 +223,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
     assert len(query) == 3
     assert query["aggregation"] == ["month"]
     assert query["companyId"] == [company._id]
@@ -242,7 +242,7 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     url = urlparse(dm._client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
     assert len(query) == 3
     assert query["companyId"] == [company._id]
     assert query["startDate"] == ["2000-01-01"]
