@@ -288,7 +288,7 @@ class DataMonster(object):
         # Change end_date to be inclusive
         df["end_date"] -= datetime.timedelta(days=1)
 
-        return df
+        return df.sort_values(by="end_date")
 
     ##############################################
     #           Dimensions methods
