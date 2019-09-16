@@ -285,7 +285,7 @@ class DataMonster(object):
 
         df = pandas.DataFrame.from_records(records)
         df["time_span"] = df["end_date"] - df["start_date"]
-        # Change end_date to not be inclusive
+        # Change end_date to be inclusive
         df["end_date"] -= datetime.timedelta(days=1)
 
         return df
