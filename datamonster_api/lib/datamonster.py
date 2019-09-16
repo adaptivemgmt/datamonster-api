@@ -113,7 +113,8 @@ class DataMonster(object):
         :param company_id: (str or int) The ID of the company for which we get the details
         :return: dictionary object with the company details
         """
-        return self._client.get(self._get_company_path(company_id))
+        path = self._get_company_path(company_id)
+        return self._client.get(path)
 
     def _get_company_path(self, company_id):
         return "{}/{}".format(self.company_path, company_id)
