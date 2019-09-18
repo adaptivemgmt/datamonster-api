@@ -19,17 +19,22 @@ def dm():
 
 @pytest.fixture
 def datasource():
-    return Datasource("id", "name", "category", "uri", None)
+    return Datasource(
+        {"id": "id", "name": "name", "category": "category", "uri": "uri"}, None
+    )
 
 
 @pytest.fixture
 def company():
-    return Company("id", "ticker", "name", "uri", None)
+    return Company({"id": "0", "ticker": "ticker", "name": "name", "uri": "uri"}, None)
 
 
 @pytest.fixture
 def other_company():
-    return Company("other_id", "other_ticker", "other_name", "other_uri", None)
+    return Company(
+        {"id": "1", "ticker": "other_ticker", "name": "other_name", "uri": "other_uri"},
+        None,
+    )
 
 
 @pytest.fixture
@@ -236,12 +241,15 @@ def fake_uuid():
 
 @pytest.fixture
 def company_with_int_id():
-    return Company("1", "ticker", "name", "uri", None)
+    return Company({"id": 1, "ticker": "ticker", "name": "name", "uri": "uri"}, None)
 
 
 @pytest.fixture
 def other_company_with_int_id():
-    return Company("2", "other_ticker", "other_name", "other_uri", None)
+    return Company(
+        {"id": 2, "ticker": "other_ticker", "name": "other_name", "uri": "other_uri"},
+        None,
+    )
 
 
 @pytest.fixture

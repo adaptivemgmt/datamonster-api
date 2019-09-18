@@ -14,7 +14,13 @@ __all__ = ["DataMonster", "DimensionSet"]
 
 
 class DataMonster(object):
-    """DataMonster object. Main entry point to the library"""
+    """DataMonster object. Main entry point to the library
+
+    :param key_id: (str) a user's public key
+    :param secret: (str) a user's secrey key
+    :param server: (optional, str) default to dm.adaptivemgmt.com
+    :param verify: (optional, bool)
+    """
 
     company_path = "/rest/v1/company"
     datasource_path = "/rest/v1/datasource"
@@ -23,22 +29,17 @@ class DataMonster(object):
 
     REQUIRED_FIELDS = {"lower_date", "upper_date", "value"}
 
-    ##############################################
-    #           Generic methods
-    ##############################################
     def __init__(self, key_id, secret, server=None, verify=True):
-        """Must initialize with your key_id and secret"""
-
-        self.client = Client(key_id, secret, server, verify)
-        self.key_id = key_id
-        self.secret = secret
+        self._client = Client(key_id, secret, server, verify)
+        self._key_id = key_id
+        self._secret = secret
 
     def _get_paginated_results(self, url):
         """Get the paginated results starting with this url"""
 
         next_page = url
         while next_page is not None:
-            resp = self.client.get(next_page)
+            resp = self._client.get(next_page)
             for result in resp["results"]:
                 yield result
             next_page = resp["pagination"]["nextPageURI"]
@@ -97,7 +98,7 @@ class DataMonster(object):
             params["q"] = query
         if datasource:
             self._check_param(datasource=datasource)
-            params["datasourceId"] = datasource.id
+            params["datasourceId"] = datasource._id
 
         url = self.company_path
         if params:
@@ -113,19 +114,13 @@ class DataMonster(object):
         :return: dictionary object with the company details
         """
         path = self._get_company_path(company_id)
-        return self.client.get(path)
+        return self._client.get(path)
 
     def _get_company_path(self, company_id):
-        """
-        :param company_id: (str or int)
-        :return: URL for REST endpoint that returns details for this company
-        """
         return "{}/{}".format(self.company_path, company_id)
 
     def _company_result_to_object(self, company, has_details=False):
-        company_inst = Company(
-            company["id"], company["ticker"], company["name"], company["uri"], self
-        )
+        company_inst = Company(company, self)
 
         if has_details:
             company_inst.set_details(company)
@@ -149,7 +144,7 @@ class DataMonster(object):
             params["q"] = query
         if company:
             self._check_param(company=company)
-            params["companyId"] = company.id
+            params["companyId"] = company.pk
 
         url = self.datasource_path
         if params:
@@ -171,7 +166,7 @@ class DataMonster(object):
         :return: dictionary object with the datasource details
         """
         path = self._get_datasource_path(datasource_id)
-        return self.client.get(path)
+        return self._client.get(path)
 
     def _get_datasource_path(self, datasource_id):
         return "{}/{}".format(self.datasource_path, datasource_id)
@@ -186,13 +181,7 @@ class DataMonster(object):
         return self.dimensions_path.format(uuid)
 
     def _datasource_result_to_object(self, datasource, has_details=False):
-        ds_inst = Datasource(
-            datasource["id"],
-            datasource["name"],
-            datasource["category"],
-            datasource["uri"],
-            self,
-        )
+        ds_inst = Datasource(datasource, self)
 
         if has_details:
             ds_inst.set_details(datasource)
@@ -215,7 +204,7 @@ class DataMonster(object):
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
-        params = {"companyId": company.id}
+        params = {"companyId": company._id}
 
         if start_date is not None:
             params["startDate"] = start_date
@@ -230,7 +219,7 @@ class DataMonster(object):
                     raise DataMonsterError(
                         "Company must be specified for a fiscalQuarter " "aggregation"
                     )
-                if aggregation.company.id != company.id:
+                if aggregation.company._id != company._id:
                     raise DataMonsterError(
                         "Aggregating by the fiscal quarter of a different "
                         "company not yet supported"
@@ -240,8 +229,8 @@ class DataMonster(object):
                 params["aggregation"] = aggregation.period
 
         headers = {"Accept": "avro/binary"}
-        url = self._get_rawdata_path(datasource.id, params)
-        resp = self.client.get(url, headers, stream=True)
+        url = self._get_rawdata_path(datasource._id, params)
+        resp = self._client.get(url, headers, stream=True)
         split_columns = datasource.get_details()["splitColumns"]
         return self._avro_to_df(resp.content, split_columns)
 
@@ -350,7 +339,7 @@ class DataMonster(object):
                                        'section_pk': 707}}]
 
         :raises: DataMonsterError if `filters` is not a dict or is not JSON-serializable.
-            Re-raises `DataMonsterError` if self.client.get() raises that.
+            Re-raises `DataMonsterError` if self._client.get() raises that.
         """
         self._check_param(datasource=datasource)
 
@@ -358,11 +347,11 @@ class DataMonster(object):
         if filters:
             params["filters"] = self.to_json_checked(filters)
 
-        url = self._get_dimensions_path(uuid=datasource.id)
+        url = self._get_dimensions_path(uuid=datasource._id)
         if params:
             url = "".join([url, "?", six.moves.urllib.parse.urlencode(params)])
 
-        # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
+        # Let any DataMonsterError from self._client.get() happen -- we don't occlude them
         return DimensionSet(
             url, self, add_company_info_from_pks=add_company_info_from_pks
         )
@@ -436,7 +425,7 @@ class DimensionSet(object):
         """
         self._url_orig = url
 
-        resp0 = dm.client.get(url)
+        resp0 = dm._client.get(url)
 
         self._min_date = resp0["minDate"]
         self._max_date = resp0["maxDate"]
@@ -464,6 +453,49 @@ class DimensionSet(object):
             self._max_date,
             has_extra_info_str,
         )
+
+    def __len__(self):
+        """
+        (int) number of *dimension dicts* in the collection
+        """
+        return self._dimension_count
+
+    def __iter__(self):
+        """Generator that iterates through the dimension dicts in the collection.
+
+        Populates self.pk2company during iteration:
+            `section_pk`s already in this dict will use the tickers (/names) of `Company`s
+            already looked up and saved;
+            newly-encountered `section_pk`s will have their corresponding `Company`s saved here
+        """
+        while True:
+            resp = self._resp  # shorthand
+            if not resp:
+                return
+
+            results_this_page = resp["results"]
+            next_page_uri = resp["pagination"]["nextPageURI"]
+
+            if not results_this_page:
+                break
+
+            for dimension in results_this_page:
+                # do `_camel2snake` *before* possible pk->ticker conversion,
+                # as `_create_ticker_items_from_section_pks` assumes snake_case
+                # ('split_combination')
+                dimension = DimensionSet._camel2snake(dimension)
+                if self._add_company_info_from_pks:
+                    self._create_ticker_items_from_section_pks(dimension)
+                yield dimension
+
+            if next_page_uri is None:
+                break
+
+            self._resp = self._dm._client.get(next_page_uri)
+
+        # So that attempts to reuse the iterator get nothing.
+        # Without this, the last page could be re-yielded
+        self._resp = None
 
     @property
     def pk2company(self):
@@ -512,49 +544,6 @@ class DimensionSet(object):
             to `bool`.
         """
         return self._add_company_info_from_pks
-
-    def __len__(self):
-        """
-        (int) number of *dimension dicts* in the collection
-        """
-        return self._dimension_count
-
-    def __iter__(self):
-        """Generator that iterates through the dimension dicts in the collection.
-
-        Populates self.pk2company during iteration:
-            `section_pk`s already in this dict will use the tickers (/names) of `Company`s
-            already looked up and saved;
-            newly-encountered `section_pk`s will have their corresponding `Company`s saved here
-        """
-        while True:
-            resp = self._resp  # shorthand
-            if not resp:
-                return
-
-            results_this_page = resp["results"]
-            next_page_uri = resp["pagination"]["nextPageURI"]
-
-            if not results_this_page:
-                break
-
-            for dimension in results_this_page:
-                # do `_camel2snake` *before* possible pk->ticker conversion,
-                # as `_create_ticker_items_from_section_pks` assumes snake_case
-                # ('split_combination')
-                dimension = DimensionSet._camel2snake(dimension)
-                if self._add_company_info_from_pks:
-                    self._create_ticker_items_from_section_pks(dimension)
-                yield dimension
-
-            if next_page_uri is None:
-                break
-
-            self._resp = self._dm.client.get(next_page_uri)
-
-        # So that attempts to reuse the iterator get nothing.
-        # Without this, the last page could be re-yielded
-        self._resp = None
 
     @staticmethod
     def _camel2snake(dimension_dict):
