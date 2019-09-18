@@ -1,3 +1,5 @@
+from memoized_property import memoized_property
+
 from .base import BaseClass
 
 
@@ -35,16 +37,13 @@ class Company(BaseClass):
         """
         return self._dm.get_company_details(self._id)
 
-    @property
+    @memoized_property
     def datasources(self):
         """Get the data sources for this company
 
         :return: (iter) iterable of Datasource objects
         """
-        if not hasattr(self, "_datasources"):
-            self._datasources = self._dm.get_datasources(company=self)
-
-        return self._datasources
+        return self._dm.get_datasources(company=self)
 
     @property
     def section_type(self):

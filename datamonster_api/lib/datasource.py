@@ -1,3 +1,5 @@
+from memoized_property import memoized_property
+
 from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
@@ -29,16 +31,13 @@ class Datasource(BaseClass):
         """
         return self._dm.get_datasource_details(self._id)
 
-    @property
+    @memoized_property
     def companies(self):
         """get the (memoized) companies for this data source.
 
         :return: (iter) iterable of Company objects
         """
-        if not hasattr(self, "_companies"):
-            self._companies = self._dm.get_companies(datasource=self)
-
-        return self._companies
+        return self._dm.get_companies(datasource=self)
 
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
         """Get data for this datasource.
