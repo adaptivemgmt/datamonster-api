@@ -61,7 +61,7 @@ def test_aggregation():
 
 
 def test_data_source():
-    """ Test EarnestQuery Panel Sales
+    """ Test 1010data Blended Credit Dataset
     """
     company = dm.get_company_by_ticker("W")
     assert company.name == "WAYFAIR"
@@ -137,19 +137,19 @@ def test_data_source_2():
 
 
 def test_big_data_source():
-    """ Test EarnestQuery Panel Sales which is a bigger dataset
+    """ Test Second Measure which is a bigger dataset
     """
     company = dm.get_company_by_id(335)
     agg = Aggregation(period="week", company=company)
 
-    ds = dm.get_datasource_by_id("7c940d75-d37f-4f4c-9d2f-7528bd4a085c")
-    assert ds.name == "EarnestQuery Panel Sales by Region"
+    ds = dm.get_datasource_by_id("46a0b992-a3e5-4011-8b61-80aa6cf4e4c4")
+    assert ds.name == "Second Measure 14 Day Lag Total  Sales per Customer"
 
     df = ds.get_data(company, end_date="2019-09-09")
-    assert_data_frame(df, 11705)
+    assert_data_frame(df, 36655)
 
     df = ds.get_data(company, agg, end_date="2019-09-09")
-    assert_data_frame(df, 1665)
+    assert_data_frame(df, 5219)
 
 
 def test_estimate_data_source():
