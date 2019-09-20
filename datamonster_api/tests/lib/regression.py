@@ -76,8 +76,8 @@ def test_data_source():
     assert ds.category == "Blended Payment Data"
     assert len(list(ds.companies)) == 190
 
-    df = ds.get_data(company, end_date="2019-09-09")
-    assert_data_frame(df, 46)
+    df = ds.get_data(company, end_date="2017-09-09")
+    assert_data_frame(df, 28)
     records = {
         "dimensions": {u"category": u"Wayfair 6-day Adjusted", u"country": u"US"},
         "end_date": pandas.to_datetime("2014-03-31"),
@@ -87,8 +87,8 @@ def test_data_source():
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
 
-    df = ds.get_data(company, start_date="2016-01-01", end_date="2019-09-01")
-    assert_data_frame(df, 28)
+    df = ds.get_data(company, start_date="2016-01-01", end_date="2017-09-01")
+    assert_data_frame(df, 12)
     records = {
         "dimensions": {u"category": u"Wayfair Overall", u"country": u"US"},
         "end_date": pandas.to_datetime("2016-03-31"),
@@ -112,8 +112,8 @@ def test_data_source_2():
     assert sales.name == "FactSet Actuals Sales Quarterly"
     assert sales.category == "Company Fundamentals"
 
-    df = sales.get_data(company, end_date="2019-09-01")
-    assert_data_frame(df, 78)
+    df = sales.get_data(company, end_date="2017-09-01")
+    assert_data_frame(df, 70)
     records = {
         "dimensions": {},
         "end_date": pandas.to_datetime("2000-03-31"),
@@ -124,8 +124,8 @@ def test_data_source_2():
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
 
     agg = Aggregation(period="quarter", company=company)
-    df = sales.get_data(company, agg, start_date="2010-01-01", end_date="2019-09-01")
-    assert_data_frame(df, 38)
+    df = sales.get_data(company, agg, start_date="2010-01-01", end_date="2017-09-01")
+    assert_data_frame(df, 30)
     records = {
         "dimensions": {},
         "end_date": pandas.to_datetime("2010-03-31"),
@@ -136,7 +136,7 @@ def test_data_source_2():
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
 
 
-def test_big_data_source():
+def test_bigger_data_source():
     """ Test SimilarWeb which is a bigger dataset
     """
     company = dm.get_company_by_id(335)
@@ -145,11 +145,11 @@ def test_big_data_source():
     ds = dm.get_datasource_by_id("5899e237-874c-4e77-9d2e-c4b6cff218e8")
     assert ds.name == "SimilarWeb Direct Volume"
 
-    df = ds.get_data(company, end_date="2019-09-09")
-    assert_data_frame(df, 45509)
+    df = ds.get_data(company, end_date="2018-01-01")
+    assert_data_frame(df, 7584)
 
-    df = ds.get_data(company, agg, end_date="2019-09-09")
-    assert_data_frame(df, 6409)
+    df = ds.get_data(company, agg, end_date="2018-01-01")
+    assert_data_frame(df, 1094)
 
 
 def test_estimate_data_source():
