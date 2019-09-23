@@ -240,11 +240,11 @@ class DataMonster(object):
         Transforms dates and columns to a stanard and agreed upon format
         """
 
-        def parse_row(row, data_col, start_col, end_col):
+        def parse_row(row, value_column, lower_date_column, upper_date_column):
             return {
-                "value": row[data_col],
-                "start_date": pandas.to_datetime(row[start_col]),
-                "end_date": pandas.to_datetime(row[end_col]),
+                "value": row[value_column],
+                "start_date": pandas.to_datetime(row[lower_date_column]),
+                "end_date": pandas.to_datetime(row[upper_date_column]),
                 "dimensions": {
                     split_key: row[split_key] for split_key in split_columns
                 },
@@ -267,10 +267,14 @@ class DataMonster(object):
         if not records:
             return pandas.DataFrame.from_records(records)
 
-        start_col, end_col, data_col = [
-            metadata[col].pop() for col in self.REQUIRED_FIELDS
-        ]
-        records = [parse_row(row, data_col, start_col, end_col) for row in records]
+        # Get the columns from the metadata
+        columns = {}
+        for field in self.REQUIRED_FIELDS:
+            if len(metadata[field]) != 1:
+                raise DataMonsterError("Expected a single defined column for {}. Got {}".format(field, metadata[field]))
+            columns[field + '_column'] = metadata[field][0]
+
+        records = [parse_row(row, **columns) for row in records]
 
         df = pandas.DataFrame.from_records(records)
         df["time_span"] = df["end_date"] - df["start_date"]
