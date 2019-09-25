@@ -42,7 +42,7 @@ def test_company():
     assert company.pk == 335
     assert company.name == "AMAZON"
     assert company.ticker == "AMZN"
-    assert company.section_type == "Company"
+    assert company.type == "Company"
     amzn_data_sources = set(company.datasources)
     amzn_data_source = dm.get_datasource_by_id("cd924848-5c49-4622-95a7-ee6d2cfe24b7")
     assert amzn_data_source.name in {i.name for i in amzn_data_sources}
@@ -50,7 +50,7 @@ def test_company():
 
     company = dm.get_company_by_id(1257)
     assert company.name == "MASTERCARD SECTOR INSIGHTS"
-    assert company.section_type == "Macro"
+    assert company.type == "Macro"
 
 
 def test_aggregation():
@@ -72,7 +72,7 @@ def test_data_source():
         dm.get_datasources(query="1010data Blended Credit & Debit Sales Index YoY")
     )
     assert ds.name == "1010data Blended Credit & Debit Sales Index YoY"
-    assert ds._id == "3de84b2e-604f-4ea7-901f-61601eef8e0e"
+    assert ds.id == "3de84b2e-604f-4ea7-901f-61601eef8e0e"
     assert ds.category == "Blended Payment Data"
     assert len(list(ds.companies)) == 190
 
@@ -108,7 +108,7 @@ def test_data_source_2():
     company = dm.get_company_by_id(335)
 
     sales = next(dm.get_datasources(query="FactSet Actuals Sales Quarterly"))
-    assert sales._id == "bdcac6ae-4f31-4aaf-a92a-12854f09c768"
+    assert sales.id == "bdcac6ae-4f31-4aaf-a92a-12854f09c768"
     assert sales.name == "FactSet Actuals Sales Quarterly"
     assert sales.category == "Company Fundamentals"
 

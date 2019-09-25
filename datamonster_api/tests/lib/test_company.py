@@ -4,10 +4,10 @@ from datamonster_api import DataMonsterError
 
 
 def _assert_object_matches_company(company, company_obj):
-    assert company_obj["id"] == company._id
+    assert company_obj["id"] == company.id
     assert company_obj["name"] == company.name
     assert company_obj["ticker"] == company.ticker
-    assert company_obj["uri"] == company._uri
+    assert company_obj["uri"] == company.uri
 
 
 def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
@@ -26,56 +26,56 @@ def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
             results[1], single_page_company_results["results"][1]
         )
 
-    dm._client.get = mocker.Mock(return_value=single_page_company_results)
+    dm.client.get = mocker.Mock(return_value=single_page_company_results)
     # No queries, no datasource
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     companies = dm.get_companies()
 
     assert_results_good(companies)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/company"
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/company"
 
     # text query, no datasource
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     companies = dm.get_companies(query="abc")
 
     assert_results_good(companies)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/company?q=abc"
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/company?q=abc"
 
     # no text query, datasource
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     companies = dm.get_companies(datasource=datasource)
 
     assert_results_good(companies)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/company?datasourceId={}".format(
-        datasource._id
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/company?datasourceId={}".format(
+        datasource.id
     )
 
     # text query, datasource
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     companies = dm.get_companies(query="abc", datasource=datasource)
 
     assert_results_good(companies)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][
         0
-    ] == "/rest/v1/company?q=abc&datasourceId={}".format(datasource._id)
+    ] == "/rest/v1/company?q=abc&datasourceId={}".format(datasource.id)
 
 
 def test_get_companies_2(mocker, dm, multi_page_company_results):
     """Test getting companies -- multiple pages"""
 
-    dm._client.get = mocker.Mock(side_effect=multi_page_company_results)
+    dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
     companies = dm.get_companies()
     companies = list(companies)
 
-    assert dm._client.get.call_count == 2
+    assert dm.client.get.call_count == 2
 
-    assert dm._client.get.call_args_list[0][0][0] == "/rest/v1/company"
+    assert dm.client.get.call_args_list[0][0][0] == "/rest/v1/company"
     assert (
-        dm._client.get.call_args_list[1][0][0]
+        dm.client.get.call_args_list[1][0][0]
         == multi_page_company_results[0]["pagination"]["nextPageURI"]
     )
     assert len(companies) == 4
@@ -107,12 +107,12 @@ def test_get_companies_by_ticker_1(mocker, dm, multi_page_company_results):
     """Test getting company by ticker"""
 
     # matches case
-    dm._client.get = mocker.Mock(side_effect=multi_page_company_results)
+    dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
     company = dm.get_company_by_ticker("c3")
     _assert_object_matches_company(company, multi_page_company_results[1]["results"][0])
 
     # does not match case
-    dm._client.get = mocker.Mock(side_effect=multi_page_company_results)
+    dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
     company = dm.get_company_by_ticker("C3")
     _assert_object_matches_company(company, multi_page_company_results[1]["results"][0])
 
@@ -122,7 +122,7 @@ def test_get_companies_by_ticker_2(mocker, dm, multi_page_company_results):
 
     # Bad datasource
     with pytest.raises(DataMonsterError) as excinfo:
-        dm._client.get = mocker.Mock(side_effect=multi_page_company_results)
+        dm.client.get = mocker.Mock(side_effect=multi_page_company_results)
         dm.get_company_by_ticker("c5")
 
     assert "Could not find company with ticker" in excinfo.value.args[0]

@@ -1,5 +1,3 @@
-from memoized_property import memoized_property
-
 from .base import BaseClass
 from .company import Company
 from .errors import DataMonsterError
@@ -7,7 +5,6 @@ from .errors import DataMonsterError
 
 class Datasource(BaseClass):
     """Datasource object which represents a data source in DataMonster
-
     :param params: (dict)
     :param dm: DataMonster object
 
@@ -16,28 +13,30 @@ class Datasource(BaseClass):
       category: (str) category associated with the datasource
     """
 
-    def __init__(self, params, dm):
-        self._dm = dm
-        self._params = params
-        self._id = params["id"]
-        self._uri = params["uri"]
-        self.name = params["name"]
-        self.category = params["category"]
+    def __init__(self, id_, name, category, uri, dm):
+        self.id = id_
+        self.name = name
+        self.category = category
+        self.uri = uri
+        self.dm = dm
 
     def get_details(self):
         """Get details (metadata) for this datasource
 
         :return: (dict) details
         """
-        return self._dm.get_datasource_details(self._id)
+        return self.dm.get_datasource_details(self.id)
 
-    @memoized_property
+    @property
     def companies(self):
-        """get the (memoized) companies for this data source.
+        """Return the (memoized) companies for this data source.
 
         :return: (iter) iterable of Company objects
         """
-        return self._dm.get_companies(datasource=self)
+        if not hasattr(self, "_companies"):
+            self._companies = self.dm.get_companies(datasource=self)
+
+        return self._companies
 
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
         """Get data for this datasource.
@@ -49,7 +48,7 @@ class Datasource(BaseClass):
 
         :return: pandas DataFrame
         """
-        return self._dm.get_data(self, company, aggregation, start_date, end_date)
+        return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
     def get_dimensions(self, company=None, add_company_info_from_pks=True, **kwargs):
         """Return the dimensions for this data source,
@@ -64,7 +63,7 @@ class Datasource(BaseClass):
                 [c.pk for c in company]  if company is a list of `Company`s.
 
         :param add_company_info_from_pks: This method delegates to
-            `self._dm.get_dimensions_for_datasource()`, passing this as the value of
+            `self.dm.get_dimensions_for_datasource()`, passing this as the value of
             the keyword parameter of the same name.
             This parameter provides a way to skip the lookup and storage of what can be,
             for some `Datasource`s, a large number of `Company`s.
@@ -137,7 +136,7 @@ class Datasource(BaseClass):
                     "company argument must be a `Company`, or a list or tuple of `Company`s"
                 )
         add_company_info_from_pks = bool(add_company_info_from_pks)
-        return self._dm.get_dimensions_for_datasource(
+        return self.dm.get_dimensions_for_datasource(
             self,
             filters=filters,
             add_company_info_from_pks=bool(add_company_info_from_pks),

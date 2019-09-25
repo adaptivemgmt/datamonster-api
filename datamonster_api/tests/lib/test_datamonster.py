@@ -7,10 +7,10 @@ from datamonster_api import Aggregation, DataMonsterError
 
 
 def _assert_object_matches_datasource(datasource, datasource_obj):
-    assert datasource_obj["id"] == datasource._id
+    assert datasource_obj["id"] == datasource.id
     assert datasource_obj["name"] == datasource.name
     assert datasource_obj["category"] == datasource.category
-    assert datasource_obj["uri"] == datasource._uri
+    assert datasource_obj["uri"] == datasource.uri
 
 
 def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
@@ -29,43 +29,43 @@ def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
             results[1], single_page_datasource_results["results"][1]
         )
 
-    dm._client.get = mocker.Mock(return_value=single_page_datasource_results)
+    dm.client.get = mocker.Mock(return_value=single_page_datasource_results)
 
     # ++ No queries, no company
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     datasources = dm.get_datasources()
 
     assert_results_good(datasources)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/datasource"
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/datasource"
 
     # ++ text query, no company
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     datasources = dm.get_datasources(query="abc")
 
     assert_results_good(datasources)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/datasource?q=abc"
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/datasource?q=abc"
 
     # ++ no text query, company
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     datasources = dm.get_datasources(company=company)
 
     assert_results_good(datasources)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/datasource?companyId={}".format(
-        company._id
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/datasource?companyId={}".format(
+        company.id
     )
 
     # ++ text query, company
-    dm._client.get.reset_mock()
+    dm.client.get.reset_mock()
     datasources = dm.get_datasources(query="abc", company=company)
 
     assert_results_good(datasources)
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][
         0
-    ] == "/rest/v1/datasource?q=abc&companyId={}".format(company._id)
+    ] == "/rest/v1/datasource?q=abc&companyId={}".format(company.id)
 
 
 def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
@@ -81,36 +81,36 @@ def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
 def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     """Test getting datasource by uuid"""
 
-    dm._client.get = mocker.Mock(return_value=datasource_details_result)
+    dm.client.get = mocker.Mock(return_value=datasource_details_result)
 
     datasource = dm.get_datasource_by_id("abc")
 
     # Make sure we hit the right endpoint
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/datasource/abc"
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/datasource/abc"
 
     # a couple of spot checks.
     assert datasource.category == "category"
     assert datasource.cadence == "daily"
 
     # Make sure we didn't go through the client again for the details
-    assert dm._client.get.call_count == 1
+    assert dm.client.get.call_count == 1
 
 
 def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
     """Test getting data -- happy case"""
-    dm._client.get = mocker.Mock(return_value=avro_data_file)
     datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
 
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
     expected_path = "/rest/v1/datasource/{}/rawdata?companyId={}".format(
-        datasource._id, company._id
+        datasource.id, company.id
     )
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == expected_path
-    assert dm._client.get.call_args[0][1] == {"Accept": "avro/binary"}
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == expected_path
+    assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
 
     # Check the columns
     assert len(df.columns) == 5
@@ -180,57 +180,57 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     """Test getting data -- good aggregations"""
 
     # ** monthly aggregation
-    dm._client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
     datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg)
 
-    url = urlparse(dm._client.get.call_args[0][0])
+    url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["month"]
-    assert query["companyId"] == [company._id]
+    assert query["companyId"] == [company.id]
 
     # ** fiscal quarter aggregation -- good company
-    dm._client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
     agg = Aggregation(period="fiscalQuarter", company=company)
 
     dm.get_data(datasource, company, agg)
 
-    url = urlparse(dm._client.get.call_args[0][0])
+    url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["fiscalQuarter"]
-    assert query["companyId"] == [company._id]
+    assert query["companyId"] == [company.id]
 
 
 def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasource):
     """Test getting data -- date filters"""
 
     # ** monthly aggregation, start date
-    dm._client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
     datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
 
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg, start_date=datetime.date(2000, 1, 1))
 
-    url = urlparse(dm._client.get.call_args[0][0])
+    url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
     assert query["aggregation"] == ["month"]
-    assert query["companyId"] == [company._id]
+    assert query["companyId"] == [company.id]
     assert query["startDate"] == ["2000-01-01"]
 
     # ** start and end date
-    dm._client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
 
     dm.get_data(
         datasource,
@@ -239,11 +239,11 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
         end_date=datetime.date(2001, 1, 1),
     )
 
-    url = urlparse(dm._client.get.call_args[0][0])
+    url = urlparse(dm.client.get.call_args[0][0])
     query = parse_qs(url.query)
 
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource._id)
+    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
-    assert query["companyId"] == [company._id]
+    assert query["companyId"] == [company.id]
     assert query["startDate"] == ["2000-01-01"]
     assert query["endDate"] == ["2001-01-01"]

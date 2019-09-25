@@ -1,5 +1,3 @@
-from memoized_property import memoized_property
-
 from .base import BaseClass
 
 
@@ -17,14 +15,12 @@ class Company(BaseClass):
 
     _details = None
 
-    def __init__(self, params, dm):
-        self._dm = dm
-        self._params = params
-        self._id = params["id"]
-        self._uri = params["uri"]
-        self.ticker = params["ticker"]
-        self.name = params["name"]
-        self.quarters = params.get("quarters", [])
+    def __init__(self, id_, ticker, name, uri, dm):
+        self.id = id_
+        self.ticker = ticker
+        self.name = name
+        self.uri = uri
+        self.dm = dm
 
     def __repr__(self):
         ticker_str = "[{}] ".format(self.ticker) if self.ticker else ""
@@ -35,26 +31,22 @@ class Company(BaseClass):
 
         :return: (dict) details
         """
-        return self._dm.get_company_details(self._id)
+        return self.dm.get_company_details(self.id)
 
-    @memoized_property
+    @property
     def datasources(self):
         """Get the data sources for this company
 
         :return: (iter) iterable of Datasource objects
         """
-        return self._dm.get_datasources(company=self)
+        if not hasattr(self, "_datasources"):
+            self._datasources = self.dm.get_datasources(company=self)
 
-    @property
-    def section_type(self):
-        """
-        :return: (str) the section type
-        """
-        return self._params["type"]
+        return self._datasources
 
     @property
     def pk(self):
         """
         :return: (int) the primary key (pk)
         """
-        return int(self._id)
+        return int(self.id)

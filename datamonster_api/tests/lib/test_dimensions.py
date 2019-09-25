@@ -64,8 +64,8 @@ def test_get_dimensions_for_datasource_single_page(
         )
 
     # No filters
-    dm._client.get = mocker.Mock(return_value=single_page_dimensions_result)
-    dm._client.get.reset_mock()
+    dm.client.get = mocker.Mock(return_value=single_page_dimensions_result)
+    dm.client.get.reset_mock()
     dimensions = dm.get_dimensions_for_datasource(datasource)
 
     _assert_dict_and_DimensionSet_metadata_match(
@@ -73,9 +73,9 @@ def test_get_dimensions_for_datasource_single_page(
     )
     assert_results_good(dimensions)
 
-    assert dm._client.get.call_count == 1
-    assert dm._client.get.call_args[0][0] == "/rest/v1/datasource/{}/dimensions".format(
-        datasource._id
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/datasource/{}/dimensions".format(
+        datasource.id
     )
 
 
@@ -84,7 +84,7 @@ def test_get_dimensions_for_datasource_multi_page(
 ):
     """Test getting dimensions. multi-page"""
 
-    dm._client.get = mocker.Mock(side_effect=multi_page_dimensions_results)
+    dm.client.get = mocker.Mock(side_effect=multi_page_dimensions_results)
     dimensions = dm.get_dimensions_for_datasource(datasource)
     _assert_dict_and_DimensionSet_metadata_match(
         multi_page_dimensions_results[0], dimensions
@@ -95,13 +95,13 @@ def test_get_dimensions_for_datasource_multi_page(
 
     dimensions = list(dimensions)
 
-    assert dm._client.get.call_count == 2
+    assert dm.client.get.call_count == 2
 
-    assert dm._client.get.call_args_list[0][0][
+    assert dm.client.get.call_args_list[0][0][
         0
-    ] == "/rest/v1/datasource/{}/dimensions".format(datasource._id)
+    ] == "/rest/v1/datasource/{}/dimensions".format(datasource.id)
     assert (
-        dm._client.get.call_args_list[1][0][0]
+        dm.client.get.call_args_list[1][0][0]
         == multi_page_dimensions_results[0]["pagination"]["nextPageURI"]
     )
 
@@ -155,9 +155,7 @@ def test_ds_get_dimensions_bad_kwarg(mocker, dm, company_with_int_id):
     """
     :param company: a `Company`, an `Iterable` of `Company`s, or None
     """
-    new_datasource = Datasource(
-        {"id": "id", "name": "name", "category": "category", "uri": "uri"}, dm
-    )
+    new_datasource = Datasource("id", "name", "category", "uri", dm)
 
     with pytest.raises(DataMonsterError) as excinfo:
         new_datasource.get_dimensions(
