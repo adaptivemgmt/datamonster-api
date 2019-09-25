@@ -6,6 +6,10 @@ class BaseClass(object):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
 
     def __getattr__(self, name):
+        """
+        NOTE: this allows us to add properties in the DataMonster rest-api endpoint
+        without making changes in the client library to support those changes
+        """
         if not self._details:
             self._details = self.get_details()
         if name in self._details:

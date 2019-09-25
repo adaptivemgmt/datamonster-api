@@ -13,8 +13,8 @@ class Datasource(BaseClass):
       category: (str) category associated with the datasource
     """
 
-    def __init__(self, id_, name, category, uri, dm):
-        self.id = id_
+    def __init__(self, _id, name, category, uri, dm):
+        self.id = _id
         self.name = name
         self.category = category
         self.uri = uri

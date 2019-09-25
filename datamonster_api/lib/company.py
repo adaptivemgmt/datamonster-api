@@ -15,8 +15,8 @@ class Company(BaseClass):
 
     _details = None
 
-    def __init__(self, id_, ticker, name, uri, dm):
-        self.id = id_
+    def __init__(self, _id, ticker, name, uri, dm):
+        self.id = _id
         self.ticker = ticker
         self.name = name
         self.uri = uri

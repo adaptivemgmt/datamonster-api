@@ -278,8 +278,12 @@ class DataMonster(object):
         columns = {}
         for field in self.REQUIRED_FIELDS:
             if len(metadata[field]) != 1:
-                raise DataMonsterError("Expected a single defined column for {}. Got {}".format(field, metadata[field]))
-            columns[field + '_column'] = metadata[field][0]
+                raise DataMonsterError(
+                    "Expected a single defined column for {}. Got {}".format(
+                        field, metadata[field]
+                    )
+                )
+            columns[field + "_column"] = metadata[field][0]
 
         records = [parse_row(row, **columns) for row in records]
 
