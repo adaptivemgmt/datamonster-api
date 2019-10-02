@@ -224,7 +224,7 @@ class DataMonster(object):
             if aggregation.period == "fiscalQuarter":
                 if aggregation.company is None:
                     raise DataMonsterError(
-                        "Company must be specified for a fiscalQuarter " "aggregation"
+                        "Company must be specified for a fiscalQuarter aggregation"
                     )
                 if aggregation.company.id != company.id:
                     raise DataMonsterError(
