@@ -258,7 +258,7 @@ class DataMonster(object):
             }
 
         reader = fastavro.reader(six.BytesIO(avro_buffer))
-        metadata = reader.schema["structure"]
+        metadata = reader.writer_schema["structure"]
         if not metadata:
             raise DataMonsterError(
                 "DataMonster does not currently support this request"
