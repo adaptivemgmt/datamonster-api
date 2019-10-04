@@ -21,7 +21,6 @@ setuptools.setup(
     ],
     install_requires=[
         "fastavro",
-        "memoized-property",
         "more-itertools",
         "numpy",
         "pandas",

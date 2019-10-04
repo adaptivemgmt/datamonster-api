@@ -30,16 +30,16 @@ class DataMonster(object):
     REQUIRED_FIELDS = {"lower_date", "upper_date", "value"}
 
     def __init__(self, key_id, secret, server=None, verify=True):
-        self._client = Client(key_id, secret, server, verify)
-        self._key_id = key_id
-        self._secret = secret
+        self.client = Client(key_id, secret, server, verify)
+        self.key_id = key_id
+        self.secret = secret
 
     def _get_paginated_results(self, url):
         """Get the paginated results starting with this url"""
 
         next_page = url
         while next_page is not None:
-            resp = self._client.get(next_page)
+            resp = self.client.get(next_page)
             for result in resp["results"]:
                 yield result
             next_page = resp["pagination"]["nextPageURI"]
@@ -98,7 +98,7 @@ class DataMonster(object):
             params["q"] = query
         if datasource:
             self._check_param(datasource=datasource)
-            params["datasourceId"] = datasource._id
+            params["datasourceId"] = datasource.id
 
         url = self.company_path
         if params:
@@ -114,13 +114,15 @@ class DataMonster(object):
         :return: dictionary object with the company details
         """
         path = self._get_company_path(company_id)
-        return self._client.get(path)
+        return self.client.get(path)
 
     def _get_company_path(self, company_id):
         return "{}/{}".format(self.company_path, company_id)
 
     def _company_result_to_object(self, company, has_details=False):
-        company_inst = Company(company, self)
+        company_inst = Company(
+            company["id"], company["ticker"], company["name"], company["uri"], self
+        )
 
         if has_details:
             company_inst.set_details(company)
@@ -144,7 +146,7 @@ class DataMonster(object):
             params["q"] = query
         if company:
             self._check_param(company=company)
-            params["companyId"] = company.pk
+            params["companyId"] = company.id
 
         url = self.datasource_path
         if params:
@@ -166,7 +168,7 @@ class DataMonster(object):
         :return: dictionary object with the datasource details
         """
         path = self._get_datasource_path(datasource_id)
-        return self._client.get(path)
+        return self.client.get(path)
 
     def _get_datasource_path(self, datasource_id):
         return "{}/{}".format(self.datasource_path, datasource_id)
@@ -181,8 +183,13 @@ class DataMonster(object):
         return self.dimensions_path.format(uuid)
 
     def _datasource_result_to_object(self, datasource, has_details=False):
-        ds_inst = Datasource(datasource, self)
-
+        ds_inst = Datasource(
+            datasource["id"],
+            datasource["name"],
+            datasource["category"],
+            datasource["uri"],
+            self,
+        )
         if has_details:
             ds_inst.set_details(datasource)
 
@@ -204,7 +211,7 @@ class DataMonster(object):
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
-        params = {"companyId": company._id}
+        params = {"companyId": company.id}
 
         if start_date is not None:
             params["startDate"] = start_date
@@ -217,9 +224,9 @@ class DataMonster(object):
             if aggregation.period == "fiscalQuarter":
                 if aggregation.company is None:
                     raise DataMonsterError(
-                        "Company must be specified for a fiscalQuarter " "aggregation"
+                        "Company must be specified for a fiscalQuarter aggregation"
                     )
-                if aggregation.company._id != company._id:
+                if aggregation.company.id != company.id:
                     raise DataMonsterError(
                         "Aggregating by the fiscal quarter of a different "
                         "company not yet supported"
@@ -229,8 +236,8 @@ class DataMonster(object):
                 params["aggregation"] = aggregation.period
 
         headers = {"Accept": "avro/binary"}
-        url = self._get_rawdata_path(datasource._id, params)
-        resp = self._client.get(url, headers, stream=True)
+        url = self._get_rawdata_path(datasource.id, params)
+        resp = self.client.get(url, headers, stream=True)
         split_columns = datasource.get_details()["splitColumns"]
         return self._avro_to_df(resp.content, split_columns)
 
@@ -251,7 +258,7 @@ class DataMonster(object):
             }
 
         reader = fastavro.reader(six.BytesIO(avro_buffer))
-        metadata = reader.schema["structure"]
+        metadata = reader.writer_schema["structure"]
         if not metadata:
             raise DataMonsterError(
                 "DataMonster does not currently support this request"
@@ -271,8 +278,12 @@ class DataMonster(object):
         columns = {}
         for field in self.REQUIRED_FIELDS:
             if len(metadata[field]) != 1:
-                raise DataMonsterError("Expected a single defined column for {}. Got {}".format(field, metadata[field]))
-            columns[field + '_column'] = metadata[field][0]
+                raise DataMonsterError(
+                    "Expected a single defined column for {}. Got {}".format(
+                        field, metadata[field]
+                    )
+                )
+            columns[field + "_column"] = metadata[field][0]
 
         records = [parse_row(row, **columns) for row in records]
 
@@ -343,7 +354,7 @@ class DataMonster(object):
                                        'section_pk': 707}}]
 
         :raises: DataMonsterError if `filters` is not a dict or is not JSON-serializable.
-            Re-raises `DataMonsterError` if self._client.get() raises that.
+            Re-raises `DataMonsterError` if self.client.get() raises that.
         """
         self._check_param(datasource=datasource)
 
@@ -351,11 +362,11 @@ class DataMonster(object):
         if filters:
             params["filters"] = self.to_json_checked(filters)
 
-        url = self._get_dimensions_path(uuid=datasource._id)
+        url = self._get_dimensions_path(uuid=datasource.id)
         if params:
             url = "".join([url, "?", six.moves.urllib.parse.urlencode(params)])
 
-        # Let any DataMonsterError from self._client.get() happen -- we don't occlude them
+        # Let any DataMonsterError from self.client.get() happen -- we don't occlude them
         return DimensionSet(
             url, self, add_company_info_from_pks=add_company_info_from_pks
         )
@@ -429,7 +440,7 @@ class DimensionSet(object):
         """
         self._url_orig = url
 
-        resp0 = dm._client.get(url)
+        resp0 = dm.client.get(url)
 
         self._min_date = resp0["minDate"]
         self._max_date = resp0["maxDate"]
@@ -495,7 +506,7 @@ class DimensionSet(object):
             if next_page_uri is None:
                 break
 
-            self._resp = self._dm._client.get(next_page_uri)
+            self._resp = self._dm.client.get(next_page_uri)
 
         # So that attempts to reuse the iterator get nothing.
         # Without this, the last page could be re-yielded
