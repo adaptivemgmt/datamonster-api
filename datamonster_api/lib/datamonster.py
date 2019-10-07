@@ -215,17 +215,13 @@ class DataMonster(object):
 
         if start_date is not None:
             if not datasource.upperDateField:
-                raise DataMonsterError(
-                    "This data source does not yet support date queries"
-                )
+                raise DataMonsterError("This data source does not support date queries")
             key = "{}__gte".format(datasource.upperDateField)
             params[key] = start_date
 
         if end_date is not None:
             if not datasource.lowerDateField:
-                raise DataMonsterError(
-                    "This data source does not yet support date queries"
-                )
+                raise DataMonsterError("This data source does not support date queries")
             key = "{}__lt".format(datasource.lowerDateField)
             params[key] = end_date
 
@@ -288,7 +284,7 @@ class DataMonster(object):
 
         df = pandas.DataFrame.from_records(records)
         df["time_span"] = df["end_date"] - df["start_date"]
-        # Change end_date to be inclusive
+        # Change the format of the end_date
         df["end_date"] -= datetime.timedelta(days=1)
 
         return df.sort_values(by="end_date")
