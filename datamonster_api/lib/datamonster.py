@@ -211,35 +211,33 @@ class DataMonster(object):
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
-        params = {"companyId": company.id}
+        params = {"section_pk": company.id}
 
         if start_date is not None:
-            params["startDate"] = start_date
+            if not datasource.upperDateField:
+                raise DataMonsterError(
+                    "This data source does not yet support date queries"
+                )
+            key = "{}__gte".format(datasource.upperDateField)
+            params[key] = start_date
 
         if end_date is not None:
-            params["endDate"] = end_date
+            if not datasource.lowerDateField:
+                raise DataMonsterError(
+                    "This data source does not yet support date queries"
+                )
+            key = "{}__lt".format(datasource.lowerDateField)
+            params[key] = end_date
 
         if aggregation:
-            aggregation_sanity_check(aggregation)
-            if aggregation.period == "fiscalQuarter":
-                if aggregation.company is None:
-                    raise DataMonsterError(
-                        "Company must be specified for a fiscalQuarter aggregation"
-                    )
-                if aggregation.company.id != company.id:
-                    raise DataMonsterError(
-                        "Aggregating by the fiscal quarter of a different "
-                        "company not yet supported"
-                    )
-
+            aggregation_sanity_check(aggregation, company=company)
             if aggregation.period is not None:
                 params["aggregation"] = aggregation.period
 
         headers = {"Accept": "avro/binary"}
         url = self._get_rawdata_path(datasource.id, params)
         resp = self.client.get(url, headers, stream=True)
-        split_columns = datasource.get_details()["splitColumns"]
-        return self._avro_to_df(resp.content, split_columns)
+        return self._avro_to_df(resp.content, datasource.splitColumns)
 
     def _avro_to_df(self, avro_buffer, split_columns):
         """Read an avro structure into a dataframe
@@ -259,6 +257,7 @@ class DataMonster(object):
 
         reader = fastavro.reader(six.BytesIO(avro_buffer))
         metadata = reader.writer_schema["structure"]
+
         if not metadata:
             raise DataMonsterError(
                 "DataMonster does not currently support this request"

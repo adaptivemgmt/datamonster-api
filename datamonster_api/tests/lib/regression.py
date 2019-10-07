@@ -43,10 +43,13 @@ def test_company():
     assert company.name == "AMAZON"
     assert company.ticker == "AMZN"
     assert company.type == "Company"
+    assert company.quarters
+    assert type(company.quarters) == list
+
     amzn_data_sources = set(company.datasources)
     amzn_data_source = dm.get_datasource_by_id("cd924848-5c49-4622-95a7-ee6d2cfe24b7")
     assert amzn_data_source.name in {i.name for i in amzn_data_sources}
-    assert len(amzn_data_sources) == 241
+    assert len(amzn_data_sources) == 263
 
     company = dm.get_company_by_id(1257)
     assert company.name == "MASTERCARD SECTOR INSIGHTS"
@@ -74,15 +77,15 @@ def test_data_source():
     assert ds.name == "1010data Blended Credit & Debit Sales Index YoY"
     assert ds.id == "3de84b2e-604f-4ea7-901f-61601eef8e0e"
     assert ds.category == "Blended Payment Data"
-    assert len(list(ds.companies)) == 190
+    assert len(list(ds.companies)) == 191
 
     df = ds.get_data(company, end_date="2017-09-09")
     assert_data_frame(df, 28)
     records = {
-        "dimensions": {u"category": u"Wayfair 6-day Adjusted", u"country": u"US"},
+        "dimensions": {u"category": u"Wayfair Overall", u"country": u"US"},
         "end_date": pandas.to_datetime("2014-03-31"),
         "start_date": pandas.to_datetime("2014-03-31"),
-        "value": 0.701535,
+        "value": 0.694094188179217,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -90,10 +93,10 @@ def test_data_source():
     df = ds.get_data(company, start_date="2016-01-01", end_date="2017-09-01")
     assert_data_frame(df, 12)
     records = {
-        "dimensions": {u"category": u"Wayfair Overall", u"country": u"US"},
+        "dimensions": {u"category": u"Wayfair 6-day Adjusted", u"country": u"US"},
         "end_date": pandas.to_datetime("2016-03-31"),
         "start_date": pandas.to_datetime("2016-03-31"),
-        "value": 0.684006,
+        "value": 0.699050896530115,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))

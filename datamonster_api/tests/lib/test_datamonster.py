@@ -92,20 +92,26 @@ def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     # a couple of spot checks.
     assert datasource.category == "category"
     assert datasource.cadence == "daily"
+    assert datasource.splitColumns == ["category"]
+
+    assert datasource.earliestData == "2015-01-01"
+    assert datasource.latestData == "2018-10-01"
 
     # Make sure we didn't go through the client again for the details
     assert dm.client.get.call_count == 1
 
 
-def test_get_data_1(mocker, dm, avro_data_file, company, datasource):
+def test_get_data_1(
+    mocker, dm, avro_data_file, company, datasource, datasource_details_result
+):
     """Test getting data -- happy case"""
-    datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
+    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
     dm.client.get = mocker.Mock(return_value=avro_data_file)
 
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/rawdata?companyId={}".format(
+    expected_path = "/rest/v1/datasource/{}/rawdata?section_pk={}".format(
         datasource.id, company.id
     )
     assert dm.client.get.call_count == 1
@@ -176,12 +182,20 @@ def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasour
     )
 
 
-def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasource):
+def test_get_data_3(
+    mocker,
+    dm,
+    avro_data_file,
+    company,
+    other_company,
+    datasource,
+    datasource_details_result,
+):
     """Test getting data -- good aggregations"""
 
     # ** monthly aggregation
     dm.client.get = mocker.Mock(return_value=avro_data_file)
-    datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
+    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
     agg = Aggregation(period="month", company=None)
 
     dm.get_data(datasource, company, agg)
@@ -192,7 +206,7 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["month"]
-    assert query["companyId"] == [company.id]
+    assert query["section_pk"] == [company.id]
 
     # ** fiscal quarter aggregation -- good company
     dm.client.get = mocker.Mock(return_value=avro_data_file)
@@ -206,15 +220,23 @@ def test_get_data_3(mocker, dm, avro_data_file, company, other_company, datasour
     assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 2
     assert query["aggregation"] == ["fiscalQuarter"]
-    assert query["companyId"] == [company.id]
+    assert query["section_pk"] == [company.id]
 
 
-def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasource):
+def test_get_data_4(
+    mocker,
+    dm,
+    avro_data_file,
+    company,
+    other_company,
+    datasource,
+    datasource_details_result,
+):
     """Test getting data -- date filters"""
 
     # ** monthly aggregation, start date
     dm.client.get = mocker.Mock(return_value=avro_data_file)
-    datasource.get_details = mocker.Mock(return_value={"splitColumns": ["category"]})
+    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
 
     agg = Aggregation(period="month", company=None)
 
@@ -226,8 +248,8 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
     assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
     assert query["aggregation"] == ["month"]
-    assert query["companyId"] == [company.id]
-    assert query["startDate"] == ["2000-01-01"]
+    assert query["section_pk"] == [company.id]
+    assert query["period_start__gte"] == ["2000-01-01"]
 
     # ** start and end date
     dm.client.get = mocker.Mock(return_value=avro_data_file)
@@ -244,6 +266,6 @@ def test_get_data_4(mocker, dm, avro_data_file, company, other_company, datasour
 
     assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
     assert len(query) == 3
-    assert query["companyId"] == [company.id]
-    assert query["startDate"] == ["2000-01-01"]
-    assert query["endDate"] == ["2001-01-01"]
+    assert query["section_pk"] == [company.id]
+    assert query["period_start__gte"] == ["2000-01-01"]
+    assert query["period_end__lt"] == ["2001-01-01"]
