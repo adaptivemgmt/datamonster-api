@@ -221,10 +221,10 @@ def datasource_details_result():
 @pytest.fixture
 def company_details_result():
     return {
-        "id": "335",
-        "name": "AMAZON",
+        "id": "id",
+        "name": "name",
         "quarters": ["03-31-1998", "06-30-1998"],
-        "ticker": "AMZN",
+        "ticker": "ticker",
         "type": "Company",
     }
 
