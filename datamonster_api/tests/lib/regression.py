@@ -49,7 +49,7 @@ def test_company():
     amzn_data_sources = set(company.datasources)
     amzn_data_source = dm.get_datasource_by_id("cd924848-5c49-4622-95a7-ee6d2cfe24b7")
     assert amzn_data_source.name in {i.name for i in amzn_data_sources}
-    assert len(amzn_data_sources) == 263
+    assert len(amzn_data_sources) == 264
 
     company = dm.get_company_by_id(1257)
     assert company.name == "MASTERCARD SECTOR INSIGHTS"
