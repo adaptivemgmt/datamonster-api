@@ -23,6 +23,11 @@ def datasource():
 
 
 @pytest.fixture
+def other_datasource():
+    return Datasource("other_id", "name", "category", "uri", None)
+
+
+@pytest.fixture
 def company():
     return Company("id", "ticker", "name", "uri", None)
 
@@ -210,6 +215,17 @@ def datasource_details_result():
         "splitColumns": ["category"],
         "upperDateField": "period_start",
         "lowerDateField": "period_end",
+    }
+
+
+@pytest.fixture
+def company_details_result():
+    return {
+        "id": "335",
+        "name": "AMAZON",
+        "quarters": ["03-31-1998", "06-30-1998"],
+        "ticker": "AMZN",
+        "type": "Company",
     }
 
 
