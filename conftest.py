@@ -198,7 +198,6 @@ def multi_page_datasource_results():
 
 @pytest.fixture
 def datasource_details_result():
-
     return {
         "id": "id",
         "name": "name",
@@ -208,7 +207,9 @@ def datasource_details_result():
         "latestData": "2018-10-01",
         "cadence": "daily",
         "aggregationType": "sum",
-        "splitColumns": ["country", "domain"],
+        "splitColumns": ["category"],
+        "upperDateField": "period_start",
+        "lowerDateField": "period_end",
     }
 
 
