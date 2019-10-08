@@ -1,14 +1,15 @@
 import datetime
 import fastavro
+import json
 import pandas
 import six
-import json
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
 from .company import Company
 from .datasource import Datasource
 from .errors import DataMonsterError
+from .utils import format_date
 
 __all__ = ["DataMonster", "DimensionSet"]
 
@@ -217,13 +218,13 @@ class DataMonster(object):
             if not datasource.upperDateField:
                 raise DataMonsterError("This data source does not support date queries")
             key = "{}__gte".format(datasource.upperDateField)
-            params[key] = start_date
+            params[key] = format_date(start_date)
 
         if end_date is not None:
             if not datasource.lowerDateField:
                 raise DataMonsterError("This data source does not support date queries")
             key = "{}__lt".format(datasource.lowerDateField)
-            params[key] = end_date
+            params[key] = format_date(end_date)
 
         if aggregation:
             aggregation_sanity_check(aggregation, company=company)

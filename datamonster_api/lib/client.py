@@ -1,6 +1,6 @@
 import datetime
-import hmac
 import hashlib
+import hmac
 import requests
 
 from .errors import DataMonsterError
