@@ -60,6 +60,7 @@ def test_company():
 
 def test_data_source():
     data_source = dm.get_datasource_by_id(QA_ETL_UUID)
+    # todo: the etl data source is not in data_fountain_site_settings yet
     # data_sources = list(dm.get_datasources(query="QA Data Fountain"))
     # assert len(data_sources) == 1
     # assert data_source == data_sources[0]
