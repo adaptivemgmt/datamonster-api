@@ -8,7 +8,7 @@ from regression_keys import DM_API_KEY_ID, DM_API_SECRET
 
 QA_ETL_UUID = "aab1c1ef-5576-4950-be87-10bb7d5e7b74"
 
-dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://localhost:5000")
+dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://staging.adaptivemgmt.com")
 
 
 def assert_data_frame(df, length, value_type="float64"):
