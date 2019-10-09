@@ -1,6 +1,5 @@
 import datetime
 import pytest
-from copy import copy
 from six.moves.urllib.parse import urlparse, parse_qs
 
 from datamonster_api import Aggregation, DataMonsterError
@@ -13,13 +12,8 @@ def _assert_object_matches_datasource(datasource, datasource_obj):
     assert datasource_obj["uri"] == datasource.uri
 
 
-def test_equality(mocker, datasource, other_datasource, datasource_details_result):
-    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
+def test_equality(datasource, other_datasource):
     assert datasource == datasource
-
-    other_details = copy(datasource_details_result)
-    other_details["id"] = "other_id"
-    other_datasource.get_details = mocker.Mock(return_value=other_details)
     assert other_datasource != datasource
 
 

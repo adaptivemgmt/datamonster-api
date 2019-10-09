@@ -219,17 +219,6 @@ def datasource_details_result():
 
 
 @pytest.fixture
-def company_details_result():
-    return {
-        "id": "id",
-        "name": "name",
-        "quarters": ["03-31-1998", "06-30-1998"],
-        "ticker": "ticker",
-        "type": "Company",
-    }
-
-
-@pytest.fixture
 def avro_data_file(datadir):
     class MockResponse(object):
         def __init__(self, content):

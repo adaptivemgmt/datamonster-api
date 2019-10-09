@@ -27,7 +27,7 @@ class Company(BaseClass):
         return "<{}: {}{}>".format(self.__class__.__name__, ticker_str, self.name)
 
     def __eq__(self, obj):
-        return isinstance(obj, Company) and self.get_details() == obj.get_details()
+        return isinstance(obj, Company) and self.id == obj.id
 
     def get_details(self):
         """Get details (metadata) for this company

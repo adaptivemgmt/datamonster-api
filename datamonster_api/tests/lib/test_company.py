@@ -1,5 +1,4 @@
 import pytest
-from copy import copy
 
 from datamonster_api import DataMonsterError
 
@@ -11,13 +10,8 @@ def _assert_object_matches_company(company, company_obj):
     assert company_obj["uri"] == company.uri
 
 
-def test_equality(mocker, company, other_company, company_details_result):
-    company.get_details = mocker.Mock(return_value=company_details_result)
+def test_equality(company, other_company):
     assert company == company
-
-    other_details = copy(company_details_result)
-    other_details["id"] = "other_id"
-    other_company.get_details = mocker.Mock(return_value=other_details)
     assert other_company != company
 
 
