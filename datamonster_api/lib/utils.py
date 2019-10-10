@@ -13,19 +13,23 @@ ACCEPTED_DATETIMES = [
     "string (%Y/%m/%d)",
 ]
 
+ERROR_MESSAGE = "Unsupported date found {{0.__class__}}={{0!r}}. Please pass one of the following {accepted}".format(
+    accepted=ACCEPTED_DATETIMES
+)
+
 
 def format_date(date):
     # get us a datetime.datetime object
     if isinstance(date, str):
-        date = parser.parse(date)
+        try:
+            date = parser.parse(date)
+        except ValueError:
+            raise ValueError(ERROR_MESSAGE.format(date))
+
     if isinstance(date, numpy.datetime64):
         date = date.tolist()
 
     if isinstance(date, (pandas.datetime, datetime.datetime, datetime.date)):
         return date.strftime("%Y-%d-%m")
 
-    raise ValueError(
-        "Unsupported datetime type found [{}] {}. Please pass one of the following: {}".format(
-            type(date), date, ACCEPTED_DATETIMES
-        )
-    )
+    raise ValueError(ERROR_MESSAGE.format(date))
