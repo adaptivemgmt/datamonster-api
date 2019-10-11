@@ -30,6 +30,6 @@ def format_date(date):
         date = date.tolist()
 
     if isinstance(date, (pandas.datetime, datetime.datetime, datetime.date)):
-        return date.strftime("%Y-%d-%m")
+        return date.strftime("%Y-%m-%d")
 
     raise ValueError(ERROR_MESSAGE.format(date))
