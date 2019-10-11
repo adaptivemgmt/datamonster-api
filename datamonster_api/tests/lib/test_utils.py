@@ -7,11 +7,11 @@ from datamonster_api import format_date
 
 
 def test_good_date():
-    assert format_date("2019-01-01") == "2019-01-01"
-    assert format_date("2019/01/01") == "2019-01-01"
+    assert format_date("2019-02-01") == "2019-02-01"
+    assert format_date("2019/02/01") == "2019-02-01"
     assert format_date(datetime.datetime(2019, 1, 1)) == "2019-01-01"
-    assert format_date(pandas.datetime(2019, 1, 1)) == "2019-01-01"
-    assert format_date(numpy.datetime64("2019-01-01")) == "2019-01-01"
+    assert format_date(pandas.datetime(2019, 1, 2)) == "2019-01-02"
+    assert format_date(numpy.datetime64("2019-01-02")) == "2019-01-02"
 
 
 def test_bad_date():
