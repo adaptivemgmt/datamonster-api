@@ -156,6 +156,19 @@ class DataMonster(object):
         datasources = self._get_paginated_results(url)
         return six.moves.map(self._datasource_result_to_object, datasources)
 
+    def get_datasource_by_name(self, name):
+        """Given a name, try to find a datasource"""
+        result = list(self.get_datasources(query=name))
+        if not len(result):
+            raise DataMonsterError(
+                "Did not find a data source matching the name {!r}".format(name)
+            )
+        if len(result) > 1:
+            raise DataMonsterError(
+                "Found {} data sources matching the name {!r}".format(len(result), name)
+            )
+        return result.pop()
+
     def get_datasource_by_id(self, datasource_id):
         """Given an ID, fill in a datasource"""
         datasource = self.get_datasource_details(datasource_id)

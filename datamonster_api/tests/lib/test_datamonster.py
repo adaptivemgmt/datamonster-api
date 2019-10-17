@@ -78,6 +78,20 @@ def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
     assert "company argument must be a Company object" in excinfo.value.args[0]
 
 
+def test_get_datasource_by_name(mocker, dm, datasource, other_datasource):
+    """Test getting datasource by name"""
+    dm.get_datasources = mocker.Mock(return_value=[datasource])
+    assert datasource == dm.get_datasource_by_name("abc")
+
+    dm.get_datasources = mocker.Mock(return_value=[])
+    with pytest.raises(DataMonsterError):
+        datasource = dm.get_datasource_by_name("abc")
+
+    dm.get_datasources = mocker.Mock(return_value=[datasource, other_datasource])
+    with pytest.raises(DataMonsterError):
+        datasource = dm.get_datasource_by_name("abc")
+
+
 def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     """Test getting datasource by uuid"""
 
