@@ -81,15 +81,15 @@ def test_get_datasources_2(mocker, dm, single_page_datasource_results, company):
 def test_get_datasource_by_name(mocker, dm, datasource, other_datasource):
     """Test getting datasource by name"""
     dm.get_datasources = mocker.Mock(return_value=[datasource])
-    assert datasource == dm.get_datasource_by_name("abc")
+    assert datasource == dm.get_datasource_by_name("name")
 
     dm.get_datasources = mocker.Mock(return_value=[])
     with pytest.raises(DataMonsterError):
-        datasource = dm.get_datasource_by_name("abc")
+        datasource = dm.get_datasource_by_name("garbage")
 
     dm.get_datasources = mocker.Mock(return_value=[datasource, other_datasource])
     with pytest.raises(DataMonsterError):
-        datasource = dm.get_datasource_by_name("abc")
+        datasource = dm.get_datasource_by_name("garbage")
 
 
 def test_get_datasource_by_id(mocker, dm, datasource_details_result):
