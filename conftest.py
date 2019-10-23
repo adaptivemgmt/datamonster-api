@@ -23,6 +23,11 @@ def datasource():
 
 
 @pytest.fixture
+def other_datasource():
+    return Datasource("other_id", "other_name", "other_category", "other_uri", None)
+
+
+@pytest.fixture
 def company():
     return Company("id", "ticker", "name", "uri", None)
 
