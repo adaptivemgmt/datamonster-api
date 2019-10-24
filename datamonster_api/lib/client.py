@@ -61,7 +61,7 @@ class Client(object):
         resp = session.get(url, verify=self.verify, stream=stream)
 
         if resp.status_code != 200:
-            raise DataMonsterError(resp.content)
+            raise DataMonsterError(resp.reason, resp.content)
 
         if resp.headers["Content-Type"] == "application/json":
             return resp.json()

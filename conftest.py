@@ -130,14 +130,14 @@ def single_page_datasource_results():
             {
                 "id": "id 1",
                 "name": "name 1",
-                "type": "datasource",
+                "type": "Datamonster DataSource",
                 "category": "category",
                 "uri": "uri 1",
             },
             {
                 "id": "id 2",
                 "name": "name 2",
-                "type": "datasource",
+                "type": "Datamonster DataSource",
                 "category": "category",
                 "uri": "uri 2",
             },
@@ -160,14 +160,14 @@ def multi_page_datasource_results():
                 {
                     "id": "id 1",
                     "name": "name 1",
-                    "type": "datasource",
+                    "type": "Datamonster DataSource",
                     "category": "category",
                     "uri": "uri 1",
                 },
                 {
                     "id": "id 2",
                     "name": "name 2",
-                    "type": "datasource",
+                    "type": "Datamonster DataSource",
                     "category": "category",
                     "uri": "uri 2",
                 },
@@ -185,14 +185,14 @@ def multi_page_datasource_results():
                 {
                     "id": "id 3",
                     "name": "name 3",
-                    "type": "datasource",
+                    "type": "Datamonster DataSource",
                     "category": "other category",
                     "uri": "uri 3",
                 },
                 {
                     "id": "id 4",
                     "name": "name 4",
-                    "type": "datasource",
+                    "type": "Datamonster DataSource",
                     "category": "category",
                     "uri": "uri 4",
                 },
@@ -206,7 +206,7 @@ def datasource_details_result():
     return {
         "id": "id",
         "name": "name",
-        "type": "datasource",
+        "type": "Datamonster DataSource",
         "category": "category",
         "earliestData": "2015-01-01",
         "latestData": "2018-10-01",
@@ -215,6 +215,13 @@ def datasource_details_result():
         "splitColumns": ["category"],
         "upperDateField": "period_start",
         "lowerDateField": "period_end",
+        "fields": [
+            {"data_type": "date", "name": "period_end"},
+            {"data_type": "date", "name": "period_start"},
+            {"data_type": "float", "name": "avg_dollar_per_cust"},
+            {"data_type": "varchar", "name": "country"},
+            {"data_type": "varchar", "name": "category"},
+        ],
     }
 
 
