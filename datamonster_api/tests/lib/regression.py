@@ -86,10 +86,10 @@ def test_data_source():
     df = ds.get_data(company, end_date="2017-09-09")
     assert_data_frame(df, 28)
     records = {
-        "dimensions": {"category": "Wayfair 6-day Adjusted", "country": "US"},
+        "dimensions": {"category": "Wayfair Overall", "country": "US"},
         "end_date": pandas.to_datetime("2014-03-31"),
         "start_date": pandas.to_datetime("2014-03-31"),
-        "value": 0.701531304199683,
+        "value": 0.694088518955128,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -100,7 +100,7 @@ def test_data_source():
         "dimensions": {"category": "Wayfair Overall", "country": "US"},
         "end_date": pandas.to_datetime("2016-03-31"),
         "start_date": pandas.to_datetime("2016-03-31"),
-        "value": 0.68400626626067,
+        "value": 0.684296477362873,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -197,11 +197,11 @@ def test_estimate_data_source():
 
     estimate = dm.get_datasource_by_id("0d07adb8-291e-4f4f-9c27-bbe2519e89e7")
     assert estimate.name == "FactSet Estimates Sales Quarterly"
-    assert estimate.type == "Datamonster Estimate"
+    assert estimate.type == "Datamonster Estimates"
     company = dm.get_company_by_id(335)
 
     df = estimate.get_data(company, end_date="2018-01-01")
-    assert_estimate_data_frame(df, 4349)
+    assert_estimate_data_frame(df, 1)
 
     with pytest.raises(DataMonsterError):
         agg = Aggregation(period="week", company=company)
