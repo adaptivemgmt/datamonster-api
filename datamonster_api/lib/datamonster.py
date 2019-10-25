@@ -246,7 +246,7 @@ class DataMonster(object):
 
         schema, df = self.get_raw_data(datasource, **params)
 
-        if datasource.type == "Datamonster DataSource":
+        if datasource.type == "datasource":
             df = self.datamonster_data_mapper(
                 self.DATAMONSTER_SCHEMA_FIELDS, schema, df
             )

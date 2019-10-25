@@ -107,7 +107,7 @@ def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     assert datasource.category == "category"
     assert datasource.cadence == "daily"
     assert datasource.splitColumns == ["category"]
-    assert datasource.type == "Datamonster DataSource"
+    assert datasource.type == "datasource"
 
     assert datasource.earliestData == "2015-01-01"
     assert datasource.latestData == "2018-10-01"

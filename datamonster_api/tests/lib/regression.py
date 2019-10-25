@@ -80,7 +80,7 @@ def test_data_source():
     assert ds.name == "1010data Blended Credit & Debit Sales Index YoY"
     assert ds.id == "3de84b2e-604f-4ea7-901f-61601eef8e0e"
     assert ds.category == "Blended Payment Data"
-    assert ds.type == "Datamonster DataSource"
+    assert ds.type == "datasource"
     assert len(list(ds.companies)) == 190
 
     df = ds.get_data(company, end_date="2017-09-09")
