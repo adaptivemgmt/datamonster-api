@@ -212,7 +212,7 @@ def datasource_details_result():
         "latestData": "2018-10-01",
         "cadence": "daily",
         "aggregationType": "sum",
-        "splitColumns": ["category"],
+        "splitColumns": ["category", "country"],
         "upperDateField": "period_start",
         "lowerDateField": "period_end",
         "fields": [
