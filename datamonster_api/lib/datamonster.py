@@ -303,6 +303,9 @@ class DataMonster(object):
 
         :return: pandas.DataFrame
         """
+        if df.empty:
+            return df
+
         if not set(schema.keys()).issuperset(mapping_fields.keys()):
             raise DataMonsterError(
                 "DataMonster does not currently support this request"
