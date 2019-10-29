@@ -106,13 +106,54 @@ def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     # a couple of spot checks.
     assert datasource.category == "category"
     assert datasource.cadence == "daily"
-    assert datasource.splitColumns == ["category"]
+    assert datasource.splitColumns == ["category", "country"]
+    assert datasource.type == "datasource"
 
     assert datasource.earliestData == "2015-01-01"
     assert datasource.latestData == "2018-10-01"
 
     # Make sure we didn't go through the client again for the details
     assert dm.client.get.call_count == 1
+
+
+def test_get_raw_data_1(
+    mocker, dm, avro_data_file, company, datasource, datasource_details_result
+):
+    """Test getting raw data -- happy case"""
+    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
+    dm.client.get = mocker.Mock(return_value=avro_data_file)
+
+    schema, df = dm.get_raw_data(datasource, section_pk=company.id)
+
+    # Check that we called the client correctly
+    expected_path = "/rest/v1/datasource/{}/rawdata?section_pk={}".format(
+        datasource.id, company.id
+    )
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == expected_path
+    assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
+
+    assert len(df.columns) == 5
+    assert sorted(df.columns) == [
+        "avg_dollar_per_cust",
+        "category",
+        "country",
+        "period_end",
+        "period_start",
+    ]
+    assert len(df) == 8
+
+    assert df.iloc[0]["category"] == "Amazon ex. Whole Foods"
+    assert df.iloc[0]["country"] == "US"
+    assert df.iloc[0]["avg_dollar_per_cust"] == 38.5165896068141
+    assert df.iloc[0]["period_start"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[0]["period_end"].date() == datetime.date(2019, 1, 3)
+
+    assert df.iloc[7]["category"] == "Amazon Acquisition Adjusted"
+    assert df.iloc[7]["country"] == "US"
+    assert df.iloc[7]["avg_dollar_per_cust"] == 40.692421507668499
+    assert df.iloc[7]["period_start"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[7]["period_end"].date() == datetime.date(2019, 1, 3)
 
 
 def test_get_data_1(
@@ -132,7 +173,6 @@ def test_get_data_1(
     assert dm.client.get.call_args[0][0] == expected_path
     assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
 
-    # Check the columns
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
         "dimensions",
@@ -141,18 +181,18 @@ def test_get_data_1(
         "time_span",
         "value",
     ]
-    # size sanity check
     assert len(df) == 8
 
-    # Check the first row
-    assert df.iloc[0]["dimensions"] == {"category": "Whole Foods"}
+    assert df.iloc[0]["dimensions"] == {"category": "Whole Foods", "country": "US"}
     assert df.iloc[0]["value"] == 52.6278787878788
     assert df.iloc[0]["start_date"].date() == datetime.date(2019, 1, 1)
     assert df.iloc[0]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)
     assert df.iloc[0]["end_date"].date() == datetime.date(2019, 1, 1)
 
-    # Check the last row
-    assert df.iloc[7]["dimensions"] == {"category": "Amazon Acquisition Adjusted"}
+    assert df.iloc[7]["dimensions"] == {
+        "category": "Amazon Acquisition Adjusted",
+        "country": "US",
+    }
     assert df.iloc[7]["value"] == 40.692421507668499
     assert df.iloc[7]["start_date"].date() == datetime.date(2019, 1, 2)
     assert df.iloc[7]["time_span"].to_pytimedelta() == datetime.timedelta(days=1)

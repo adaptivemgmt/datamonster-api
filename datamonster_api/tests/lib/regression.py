@@ -11,18 +11,21 @@ dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://staging.adaptivemg
 
 
 def assert_data_frame(df, length):
-    assert all(
-        df.columns
-        == [u"dimensions", u"end_date", u"start_date", u"value", u"time_span"]
-    )
-    assert all(
+    assert sorted(df.columns) == [
+        "dimensions",
+        "end_date",
+        "start_date",
+        "time_span",
+        "value",
+    ]
+    assert sorted(
         df.dtypes.values
         == [
-            numpy.dtype("O"),
             numpy.dtype("<M8[ns]"),
             numpy.dtype("<M8[ns]"),
             numpy.dtype("float64"),
             numpy.dtype("<m8[ns]"),
+            numpy.dtype("O"),
         ]
     )
     assert len(df) == length
@@ -77,15 +80,16 @@ def test_data_source():
     assert ds.name == "1010data Blended Credit & Debit Sales Index YoY"
     assert ds.id == "3de84b2e-604f-4ea7-901f-61601eef8e0e"
     assert ds.category == "Blended Payment Data"
-    assert len(list(ds.companies)) == 191
+    assert ds.type == "datasource"
+    assert len(list(ds.companies)) == 190
 
     df = ds.get_data(company, end_date="2017-09-09")
     assert_data_frame(df, 28)
     records = {
-        "dimensions": {u"category": u"Wayfair Overall", u"country": u"US"},
+        "dimensions": {"category": "Wayfair Overall", "country": "US"},
         "end_date": pandas.to_datetime("2014-03-31"),
         "start_date": pandas.to_datetime("2014-03-31"),
-        "value": 0.694094188179217,
+        "value": 0.694088518955128,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -93,10 +97,10 @@ def test_data_source():
     df = ds.get_data(company, start_date="2016-01-01", end_date="2017-09-01")
     assert_data_frame(df, 12)
     records = {
-        "dimensions": {u"category": u"Wayfair 6-day Adjusted", u"country": u"US"},
+        "dimensions": {"category": "Wayfair Overall", "country": "US"},
         "end_date": pandas.to_datetime("2016-03-31"),
         "start_date": pandas.to_datetime("2016-03-31"),
-        "value": 0.699050896530115,
+        "value": 0.684296477362873,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -158,6 +162,47 @@ def test_bigger_data_source():
 def test_estimate_data_source():
     """ Test Factset Estimates Sales Quarterly Data, this is currently WIP
     """
+
+    def assert_estimate_data_frame(df, length):
+        assert sorted(df.columns) == [
+            "average",
+            "currency_code",
+            "end_date",
+            "estimate_count",
+            "high",
+            "low",
+            "median",
+            "section_pk",
+            "start_date",
+            "std_dev",
+            "target_date",
+        ]
+        assert sorted(
+            df.dtypes.values
+            == [
+                numpy.dtype("float64"),
+                numpy.dtype("<M8[ns]"),
+                numpy.dtype("int64"),
+                numpy.dtype("int64"),
+                numpy.dtype("float64"),
+                numpy.dtype("float64"),
+                numpy.dtype("float64"),
+                numpy.dtype("<M8[ns]"),
+                numpy.dtype("float64"),
+                numpy.dtype("<M8[ns]"),
+                numpy.dtype("O"),
+            ]
+        )
+        assert len(df) == length
+
     estimate = dm.get_datasource_by_id("0d07adb8-291e-4f4f-9c27-bbe2519e89e7")
     assert estimate.name == "FactSet Estimates Sales Quarterly"
-    # estimate.get_data() is WIP
+    assert estimate.type == "Datamonster Estimates"
+    company = dm.get_company_by_id(335)
+
+    df = estimate.get_data(company, end_date="2018-01-01")
+    assert_estimate_data_frame(df, 1)
+
+    with pytest.raises(DataMonsterError):
+        agg = Aggregation(period="week", company=company)
+        df = estimate.get_data(company, agg, end_date="2018-01-01")

@@ -212,9 +212,16 @@ def datasource_details_result():
         "latestData": "2018-10-01",
         "cadence": "daily",
         "aggregationType": "sum",
-        "splitColumns": ["category"],
+        "splitColumns": ["category", "country"],
         "upperDateField": "period_start",
         "lowerDateField": "period_end",
+        "fields": [
+            {"data_type": "date", "name": "period_end"},
+            {"data_type": "date", "name": "period_start"},
+            {"data_type": "float", "name": "avg_dollar_per_cust"},
+            {"data_type": "varchar", "name": "country"},
+            {"data_type": "varchar", "name": "category"},
+        ],
     }
 
 
