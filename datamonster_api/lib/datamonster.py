@@ -276,7 +276,9 @@ class DataMonster(object):
 
         def parse_row(row):
             return {
-                col["name"]: pandas.to_datetime(row[col["name"]])
+                col["name"]: pandas.to_datetime(
+                    row[col["name"]] if row[col["name"]] != "None" else None
+                )
                 if col["data_type"] == "date"
                 else row[col["name"]]
                 for col in data_types
