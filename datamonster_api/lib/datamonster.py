@@ -1,14 +1,15 @@
 import datetime
 import fastavro
+import json
 import pandas
 import six
-import json
 
 from .aggregation import aggregation_sanity_check
 from .client import Client
 from .company import Company
 from .datasource import Datasource
 from .errors import DataMonsterError
+from .utils import format_date
 
 __all__ = ["DataMonster", "DimensionSet"]
 
@@ -27,7 +28,11 @@ class DataMonster(object):
     dimensions_path = "/rest/v1/datasource/{}/dimensions"
     rawdata_path = "{}/rawdata?{}"
 
-    REQUIRED_FIELDS = {"lower_date", "upper_date", "value"}
+    DATAMONSTER_SCHEMA_FIELDS = {
+        "lower_date": "start_date",
+        "upper_date": "end_date",
+        "value": "value",
+    }
 
     def __init__(self, key_id, secret, server=None, verify=True):
         self.client = Client(key_id, secret, server, verify)
@@ -155,6 +160,15 @@ class DataMonster(object):
         datasources = self._get_paginated_results(url)
         return six.moves.map(self._datasource_result_to_object, datasources)
 
+    def get_datasource_by_name(self, name):
+        """Given a name, try to find a datasource"""
+        for ds in self.get_datasources(query=name):
+            if ds.name.lower() == name.lower():
+                return ds
+        raise DataMonsterError(
+            "Did not find a data source matching the name {!r}".format(name)
+        )
+
     def get_datasource_by_id(self, datasource_id):
         """Given an ID, fill in a datasource"""
         datasource = self.get_datasource_details(datasource_id)
@@ -217,77 +231,111 @@ class DataMonster(object):
             if not datasource.upperDateField:
                 raise DataMonsterError("This data source does not support date queries")
             key = "{}__gte".format(datasource.upperDateField)
-            params[key] = start_date
+            params[key] = format_date(start_date)
 
         if end_date is not None:
             if not datasource.lowerDateField:
                 raise DataMonsterError("This data source does not support date queries")
             key = "{}__lt".format(datasource.lowerDateField)
-            params[key] = end_date
+            params[key] = format_date(end_date)
 
         if aggregation:
             aggregation_sanity_check(aggregation, company=company)
             if aggregation.period is not None:
                 params["aggregation"] = aggregation.period
 
+        schema, df = self.get_raw_data(datasource, **params)
+
+        if datasource.type == "datasource":
+            df = self.datamonster_data_mapper(
+                self.DATAMONSTER_SCHEMA_FIELDS, schema, df
+            )
+
+        if "end_date" in df:
+            df.sort_values(by="end_date", inplace=True)
+        return df
+
+    def get_raw_data(self, datasource, **kwargs):
+        """Get data for datasource, providing a raw interface.
+
+        :param datasource: Datasource object to get the data for
+        :param **kwargs: unparsed kwargs to get passed as query parameters
+
+        :return: schema, pandas.DataFrame
+        """
         headers = {"Accept": "avro/binary"}
-        url = self._get_rawdata_path(datasource.id, params)
+        url = self._get_rawdata_path(datasource.id, kwargs)
         resp = self.client.get(url, headers, stream=True)
-        return self._avro_to_df(resp.content, datasource.splitColumns)
+        return self._avro_to_df(resp.content, datasource.fields)
 
-    def _avro_to_df(self, avro_buffer, split_columns):
-        """Read an avro structure into a dataframe
+    def _avro_to_df(self, avro_buffer, data_types):
+        """Read an avro structure into a dataframe and minimially parse it
 
-        Transforms dates and columns to a stanard and agreed upon format
+        returns: schema, pandas.Dataframe
         """
 
-        def parse_row(row, value_column, lower_date_column, upper_date_column):
+        def parse_row(row):
             return {
-                "value": row[value_column],
-                "start_date": pandas.to_datetime(row[lower_date_column]),
-                "end_date": pandas.to_datetime(row[upper_date_column]),
-                "dimensions": {
-                    split_key: row[split_key] for split_key in split_columns
-                },
+                col["name"]: pandas.to_datetime(row[col["name"]])
+                if col["data_type"] == "date"
+                else row[col["name"]]
+                for col in data_types
             }
 
         reader = fastavro.reader(six.BytesIO(avro_buffer))
-        metadata = reader.writer_schema["structure"]
+        metadata = reader.writer_schema.get("structure", ())
 
         if not metadata:
             raise DataMonsterError(
                 "DataMonster does not currently support this request"
             )
 
-        if not set(metadata.keys()).issuperset(self.REQUIRED_FIELDS):
+        records = [parse_row(r) for r in reader]
+        return metadata, pandas.DataFrame.from_records(records)
+
+    @staticmethod
+    def datamonster_data_mapper(mapping_fields, schema, df):
+        """mapping function applied to a DataMonster data source to format the data
+
+        :param mapping_fields (dict): mapping of column names to rename from in the schema
+        :param schema (dict): avro schema of the data
+        :param df (pandas.DataFrame): data to manipulate
+
+        :return: pandas.DataFrame
+        """
+        if df.empty:
+            return df
+
+        if not set(schema.keys()).issuperset(mapping_fields.keys()):
             raise DataMonsterError(
                 "DataMonster does not currently support this request"
             )
 
-        records = [r for r in reader]
-
-        if not records:
-            return pandas.DataFrame.from_records(records)
-
-        # Get the columns from the metadata
-        columns = {}
-        for field in self.REQUIRED_FIELDS:
-            if len(metadata[field]) != 1:
+        split_columns = schema.get("split", [])
+        rename_columns = {}
+        for key, val in mapping_fields.items():
+            if len(schema[key]) != 1:
                 raise DataMonsterError(
-                    "Expected a single defined column for {}. Got {}".format(
-                        field, metadata[field]
+                    "Expected a single defined column for {!r}. Got {!r}".format(
+                        key, schema[key]
                     )
                 )
-            columns[field + "_column"] = metadata[field][0]
+            rename_columns[schema[key][0]] = val
 
-        records = [parse_row(row, **columns) for row in records]
+        df.rename(columns=rename_columns, inplace=True)
+        df["dimensions"] = df.apply(
+            lambda row, *splits: {split: row[split] for split in splits},
+            args=(split_columns),
+            axis=1,
+        )
 
-        df = pandas.DataFrame.from_records(records)
         df["time_span"] = df["end_date"] - df["start_date"]
-        # Change the format of the end_date
-        df["end_date"] -= datetime.timedelta(days=1)
-
-        return df.sort_values(by="end_date")
+        df["end_date"] -= datetime.timedelta(
+            days=1
+        )  # Change the format of the end_date
+        drop_columns = [col for col in split_columns + ["section_pk"] if col in df]
+        df.drop(columns=drop_columns, inplace=True)
+        return df
 
     ##############################################
     #           Dimensions methods
