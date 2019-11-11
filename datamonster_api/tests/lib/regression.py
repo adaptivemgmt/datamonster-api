@@ -1,3 +1,4 @@
+import collections
 import datetime
 import numpy
 import pandas
@@ -6,19 +7,21 @@ import pytest
 from datamonster_api import DataMonster, Aggregation, DataMonsterError
 from regression_keys import DM_API_KEY_ID, DM_API_SECRET
 
-QA_ETL_UUID = "aab1c1ef-5576-4950-be87-10bb7d5e7b74"
+QA_ETL_UUID = "57588c68-e262-49b4-b05a-8ae4c30c183b"
 
-dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://staging.adaptivemgmt.com")
+dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://localhost:5000")
 
 
 def assert_data_frame(df, length, value_type="float64"):
-    assert all(
-        df.columns
-        == [u"dimensions", u"end_date", u"start_date", u"value", u"time_span"]
-    )
-    assert all(
-        df.dtypes.values
-        == [
+    assert sorted(df.columns) == [
+        "dimensions",
+        "end_date",
+        "start_date",
+        "time_span",
+        "value",
+    ]
+    assert collections.Counter(df.dtypes.values) == collections.Counter(
+        [
             numpy.dtype("<M8[ns]"),
             numpy.dtype("<M8[ns]"),
             numpy.dtype(value_type),
@@ -47,11 +50,7 @@ def test_company():
     assert company.type == "Company"
     assert company.quarters
     assert type(company.quarters) == list
-
-    data_sources = set(company.datasources)
-    data_source = dm.get_datasource_by_id("cd924848-5c49-4622-95a7-ee6d2cfe24b7")
-    assert data_source.name in {i.name for i in data_sources}
-    assert len(data_sources) > 220
+    assert company.quarters[0] == "04-21-2001"
 
     company = dm.get_company_by_id(1257)
     assert company.name == "MASTERCARD SECTOR INSIGHTS"
@@ -60,28 +59,15 @@ def test_company():
 
 def test_data_source():
     data_source = dm.get_datasource_by_id(QA_ETL_UUID)
-    # todo: the etl data source is not in data_fountain_site_settings yet, also see DAT-2317
-    # data_sources = list(dm.get_datasources(query="QA Data Fountain"))
-    # assert len(data_sources) == 1
-    # assert data_source == data_sources[0]
+    assert data_source == dm.get_datasource_by_name("Static QA Fountain")
     assert data_source.id == QA_ETL_UUID
-    assert data_source.name == "QA Data Fountain"
+    assert data_source.name == "Static QA Fountain"
     assert data_source.uri == "/rest/v1/datasource/" + QA_ETL_UUID
     assert data_source.category == "Web Scrape Data"
-    assert len(list(data_source.companies)) == 0
-    assert data_source.get_details() == {
-        "aggregationType": "mean",
-        "cadence": "annual",
-        "category": "Web Scrape Data",
-        "earliestData": "2018-10-09",
-        "id": QA_ETL_UUID,
-        "latestData": "2019-10-08",
-        "lowerDateField": "period_end",
-        "name": "QA Data Fountain",
-        "splitColumns": ["country"],
-        "type": "datasource",
-        "upperDateField": "period_start",
-    }
+    assert len(list(data_source.companies)) == 2
+    details = data_source.get_details()
+    assert details["earliestData"] == "2017-07-01"
+    assert details["category"] == "Web Scrape Data"
 
 
 def test_aggregation():
@@ -96,15 +82,15 @@ def test_get_data():
     company = dm.get_company_by_id(79)
 
     df = data_source.get_data(company, end_date="2017-09-01")
-    assert len(df) == 0
+    assert len(df) == 122
 
     df = data_source.get_data(company, end_date="2019-01-01")
-    assert_data_frame(df, 166, "int64")
+    assert_data_frame(df, 1096, "int64")
     records = {
-        "dimensions": {"country": "GB"},
-        "end_date": pandas.to_datetime("2018-10-09"),
-        "start_date": pandas.to_datetime("2018-10-09"),
-        "value": 11009,
+        "dimensions": {"country": "USA", "category": "small"},
+        "end_date": pandas.to_datetime("2017-07-01"),
+        "start_date": pandas.to_datetime("2017-07-01"),
+        "value": 701,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -112,16 +98,58 @@ def test_get_data():
     df = data_source.get_data(company, start_date="2018-12-10", end_date="2019-01-01")
     assert_data_frame(df, 42, "int64")
     records = {
-        "dimensions": {"country": "GB"},
+        "dimensions": {"country": "USA", "category": "large"},
         "end_date": pandas.to_datetime("2018-12-10"),
         "start_date": pandas.to_datetime("2018-12-10"),
-        "value": 11210,
+        "value": 1210,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
 
-    with pytest.raises(DataMonsterError):
-        data_source.get_data(company, Aggregation(period="quarter", company=company))
+    df = data_source.get_data(
+        company, Aggregation(period="quarter", company=company), end_date="2019-01-01"
+    )
+    assert_data_frame(df, 24)
+    records = {
+        "dimensions": {"country": "USA", "category": "small"},
+        "end_date": pandas.to_datetime("2017-09-30"),
+        "start_date": pandas.to_datetime("2017-07-01"),
+        "value": 813.553191,
+        "time_span": datetime.timedelta(days=92),
+    }
+    assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
+
+
+def test_get_data_qa_today():
+    data_source = dm.get_datasource_by_id(QA_ETL_UUID)
+    company = dm.get_company_by_id(79)
+    yest = datetime.datetime.now() - datetime.timedelta(days=1)
+    df = data_source.get_data(company, start_date=yest)
+    assert_data_frame(df, 2, "int64")
+    parsed_date = pandas.to_datetime(yest.strftime("%Y-%m-%d"))
+    records = [
+        {
+            "dimensions": {
+                "category": "large" if yest.day % 2 == 0 else "small",
+                "country": "USA",
+            },
+            "end_date": parsed_date,
+            "start_date": parsed_date,
+            "value": int("{}{}".format(yest.month, yest.day)),
+            "time_span": datetime.timedelta(days=1),
+        },
+        {
+            "dimensions": {
+                "category": "large" if yest.day % 2 == 0 else "small",
+                "country": "GB",
+            },
+            "end_date": parsed_date,
+            "start_date": parsed_date,
+            "value": int("1{}{}".format(yest.month, yest.day)),
+            "time_span": datetime.timedelta(days=1),
+        },
+    ]
+    assert_frame_equal(df, pandas.DataFrame.from_records(records))
 
 
 def test_get_data_simple():
@@ -251,7 +279,7 @@ def test_get_data_estimate():
     company = dm.get_company_by_id(335)
 
     df = estimate.get_data(company, end_date="2018-01-01")
-    assert_estimate_data_frame(df, 1)
+    assert_estimate_data_frame(df, 4349)
 
     with pytest.raises(DataMonsterError):
         agg = Aggregation(period="week", company=company)
