@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name="datamonster_api",
-    version="0.4.7",
+    version="0.4.8",
     author="Kevin Thompson",
     author_email="kevin@adaptivemgmt.com",
     description="Library for accessing the Datamonster REST API",
