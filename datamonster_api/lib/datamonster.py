@@ -274,18 +274,17 @@ class DataMonster(object):
         returns: schema, pandas.Dataframe
         """
 
-        def parse_item(item_type, item):
-            if item_type == "date":
-                try:
-                    return pandas.to_datetime(item)
-                except ValueError:
-                    return None
-            else:
-                return item
+        def parse_date(date):
+            try:
+                return pandas.to_datetime(date)
+            except ValueError:
+                return None
 
         def parse_row(row):
             return {
-                col["name"]: parse_item(col["data_type"], row[col["name"]])
+                col["name"]: parse_date(row[col["name"]])
+                if col["data_type"] == "date"
+                else row[col["name"]]
                 for col in data_types
             }
 
