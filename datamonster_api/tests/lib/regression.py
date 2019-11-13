@@ -8,6 +8,8 @@ from datamonster_api import DataMonster, Aggregation, DataMonsterError
 from regression_keys import DM_API_KEY_ID, DM_API_SECRET
 
 QA_ETL_UUID = "57588c68-e262-49b4-b05a-8ae4c30c183b"
+FACTSET_UUID = "0d07adb8-291e-4f4f-9c27-bbe2519e89e7"
+SIMILARWEB_UUID = "5899e237-874c-4e77-9d2e-c4b6cff218e8"
 
 dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://staging.adaptivemgmt.com")
 
@@ -227,7 +229,7 @@ def test_get_data_bigger():
     """ Test `SimilarWeb Direct Volume` which is a bigger dataset
     """
     company = dm.get_company_by_id(335)
-    ds = dm.get_datasource_by_id("5899e237-874c-4e77-9d2e-c4b6cff218e8")
+    ds = dm.get_datasource_by_id(SIMILARWEB_UUID)
 
     df = ds.get_data(company, end_date="2018-01-01")
     assert_data_frame(df, 7584)
@@ -273,7 +275,7 @@ def test_get_data_estimate():
         )
         assert len(df) == length
 
-    estimate = dm.get_datasource_by_id("0d07adb8-291e-4f4f-9c27-bbe2519e89e7")
+    estimate = dm.get_datasource_by_id(FACTSET_UUID)
     assert estimate.name == "FactSet Estimates Sales Quarterly"
     assert estimate.type == "Datamonster Estimates"
     company = dm.get_company_by_id(335)
