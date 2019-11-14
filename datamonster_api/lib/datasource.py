@@ -20,6 +20,9 @@ class Datasource(BaseClass):
         self.uri = uri
         self.dm = dm
 
+    def __eq__(self, obj):
+        return isinstance(obj, Datasource) and self.id == obj.id
+
     def get_details(self):
         """Get details (metadata) for this datasource
 
