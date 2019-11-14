@@ -10,6 +10,11 @@ def _assert_object_matches_company(company, company_obj):
     assert company_obj["uri"] == company.uri
 
 
+def test_equality(company, other_company):
+    assert company == company
+    assert other_company != company
+
+
 def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
 
     """Test getting companies. single page. various filters"""

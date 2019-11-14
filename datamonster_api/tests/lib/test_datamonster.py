@@ -1,7 +1,6 @@
 import datetime
 import pandas
 import pytest
-
 from six.moves.urllib.parse import urlparse, parse_qs
 
 from datamonster_api import Aggregation, DataMonsterError, DataMonster
@@ -12,6 +11,11 @@ def _assert_object_matches_datasource(datasource, datasource_obj):
     assert datasource_obj["name"] == datasource.name
     assert datasource_obj["category"] == datasource.category
     assert datasource_obj["uri"] == datasource.uri
+
+
+def test_equality(datasource, other_datasource):
+    assert datasource == datasource
+    assert other_datasource != datasource
 
 
 def test_datamonster_datasource_mapper():
