@@ -79,31 +79,31 @@ def test_aggregation():
     assert agg.company == company
 
 
-def test_get_data():
+def test_get_data_qa_etl_historical():
     data_source = dm.get_datasource_by_id(QA_ETL_UUID)
     company = dm.get_company_by_id(79)
 
     df = data_source.get_data(company, end_date="2017-09-01")
-    assert len(df) == 122
+    assert len(df) == 244
 
     df = data_source.get_data(company, end_date="2019-01-01")
-    assert_data_frame(df, 1096, "int64")
+    assert_data_frame(df, 2192, "int64")
     records = {
         "dimensions": {"country": "USA", "category": "small"},
         "end_date": pandas.to_datetime("2017-07-01"),
         "start_date": pandas.to_datetime("2017-07-01"),
-        "value": 701,
+        "value": 1701,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
 
     df = data_source.get_data(company, start_date="2018-12-10", end_date="2019-01-01")
-    assert_data_frame(df, 42, "int64")
+    assert_data_frame(df, 84, "int64")
     records = {
-        "dimensions": {"country": "USA", "category": "large"},
+        "dimensions": {"country": "USA", "category": "small"},
         "end_date": pandas.to_datetime("2018-12-10"),
         "start_date": pandas.to_datetime("2018-12-10"),
-        "value": 1210,
+        "value": 11210,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -116,7 +116,7 @@ def test_get_data():
         "dimensions": {"country": "USA", "category": "small"},
         "end_date": pandas.to_datetime("2017-09-30"),
         "start_date": pandas.to_datetime("2017-07-01"),
-        "value": 813.553191,
+        "value": 1814.75,
         "time_span": datetime.timedelta(days=92),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -127,7 +127,7 @@ def test_get_data_qa_today():
     company = dm.get_company_by_id(79)
     yest = datetime.datetime.now() - datetime.timedelta(days=1)
     df = data_source.get_data(company, start_date=yest)
-    assert_data_frame(df, 2, "int64")
+    assert_data_frame(df, 4, "int64")
     parsed_date = pandas.to_datetime(yest.strftime("%Y-%m-%d"))
     records = [
         {
@@ -137,7 +137,17 @@ def test_get_data_qa_today():
             },
             "end_date": parsed_date,
             "start_date": parsed_date,
-            "value": int("{}{}".format(yest.month, yest.day)),
+            "value": int("1{}{}".format(int(yest.month), int(yest.day))),
+            "time_span": datetime.timedelta(days=1),
+        },
+        {
+            "dimensions": {
+                "category": "large" if yest.day % 2 == 1 else "small",
+                "country": "USA",
+            },
+            "end_date": parsed_date,
+            "start_date": parsed_date,
+            "value": int("1{}{}".format(int(yest.month), int(yest.day))),
             "time_span": datetime.timedelta(days=1),
         },
         {
@@ -147,10 +157,21 @@ def test_get_data_qa_today():
             },
             "end_date": parsed_date,
             "start_date": parsed_date,
-            "value": int("1{}{}".format(yest.month, yest.day)),
+            "value": int("2{}{}".format(int(yest.month), int(yest.day))),
+            "time_span": datetime.timedelta(days=1),
+        },
+        {
+            "dimensions": {
+                "category": "large" if yest.day % 2 == 1 else "small",
+                "country": "GB",
+            },
+            "end_date": parsed_date,
+            "start_date": parsed_date,
+            "value": int("2{}{}".format(int(yest.month), int(yest.day))),
             "time_span": datetime.timedelta(days=1),
         },
     ]
+    print(df)
     assert_frame_equal(df, pandas.DataFrame.from_records(records))
 
 
