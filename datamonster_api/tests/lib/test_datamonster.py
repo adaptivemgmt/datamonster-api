@@ -1,8 +1,9 @@
 import datetime
+import pandas
 import pytest
 from six.moves.urllib.parse import urlparse, parse_qs
 
-from datamonster_api import Aggregation, DataMonsterError
+from datamonster_api import Aggregation, DataMonsterError, DataMonster
 
 
 def _assert_object_matches_datasource(datasource, datasource_obj):
@@ -15,6 +16,23 @@ def _assert_object_matches_datasource(datasource, datasource_obj):
 def test_equality(datasource, other_datasource):
     assert datasource == datasource
     assert other_datasource != datasource
+
+
+def test_datamonster_datasource_mapper():
+    from pandas.util.testing import assert_frame_equal
+
+    df = pandas.DataFrame.from_records([])
+    print(assert_frame_equal(DataMonster.datamonster_data_mapper({}, {}, df), df))
+    assert_frame_equal(DataMonster.datamonster_data_mapper({}, {}, df), df)
+
+    df = pandas.DataFrame.from_records([{"apple": 1, "banana": 2, "cherry": 3}])
+    with pytest.raises(DataMonsterError):
+        DataMonster.datamonster_data_mapper({"garbage": "g"}, {"split": "apple"}, df)
+
+    with pytest.raises(DataMonsterError):
+        DataMonster.datamonster_data_mapper(
+            {"fruits": "value"}, {"fruits": ["apple", "banana"]}, df
+        )
 
 
 def test_get_datasources_1(mocker, dm, single_page_datasource_results, company):
