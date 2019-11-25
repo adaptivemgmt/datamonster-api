@@ -11,7 +11,7 @@ QA_ETL_UUID = "57588c68-e262-49b4-b05a-8ae4c30c183b"
 FACTSET_UUID = "0d07adb8-291e-4f4f-9c27-bbe2519e89e7"
 SIMILARWEB_UUID = "5899e237-874c-4e77-9d2e-c4b6cff218e8"
 
-dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://localhost:5000")
+dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://staging.adaptivemgmt.com")
 
 
 def assert_data_frame(df, length, value_type="float64"):
