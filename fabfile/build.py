@@ -39,8 +39,8 @@ def python_environment(
         os.makedirs(base_dir)
 
     with lcd(base_dir):
-        local("virtualenv {}".format(dir_name))
-        local("{}/pip install --upgrade pip".format(bin_dir))
-        local("{}/pip install -r {}".format(bin_dir, path_to_requirements))
+        local("python3 -m venv {}".format(dir_name))
+        local("{}/pip3 install --upgrade pip".format(bin_dir))
+        local("{}/pip3 install -r {}".format(bin_dir, path_to_requirements))
         local("virtualenv --relocatable {}".format(dir_name))
         print("path_to_virtual_env: {}".format(path_to_virtual_env))
