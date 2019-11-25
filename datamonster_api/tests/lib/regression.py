@@ -11,7 +11,7 @@ QA_ETL_UUID = "57588c68-e262-49b4-b05a-8ae4c30c183b"
 FACTSET_UUID = "0d07adb8-291e-4f4f-9c27-bbe2519e89e7"
 SIMILARWEB_UUID = "5899e237-874c-4e77-9d2e-c4b6cff218e8"
 
-dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://staging.adaptivemgmt.com")
+dm = DataMonster(DM_API_KEY_ID, DM_API_SECRET, server="http://localhost:5000")
 
 
 def assert_data_frame(df, length, value_type="float64"):
@@ -191,10 +191,10 @@ def test_get_data_simple():
     df = ds.get_data(company, end_date="2017-09-09")
     assert_data_frame(df, 28)
     records = {
-        "dimensions": {"category": "Wayfair Overall", "country": "US"},
+        "dimensions": {"category": "Wayfair 6-day Adjusted", "country": "US"},
         "end_date": pandas.to_datetime("2014-03-31"),
         "start_date": pandas.to_datetime("2014-03-31"),
-        "value": 0.694088518955128,
+        "value": 0.70154036189355,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -205,7 +205,7 @@ def test_get_data_simple():
         "dimensions": {"category": "Wayfair Overall", "country": "US"},
         "end_date": pandas.to_datetime("2016-03-31"),
         "start_date": pandas.to_datetime("2016-03-31"),
-        "value": 0.684296477362873,
+        "value": 0.684391819283361,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
