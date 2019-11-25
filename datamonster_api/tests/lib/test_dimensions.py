@@ -39,8 +39,10 @@ def test_filters_param_not_json_serializable(dm, datasource):
             datasource, filters={"somekey": __NoCanSerialize()}
         )
 
-    errtext = "Problem with filters when getting dimensions: Object of type __NoCanSerialize is not JSON serializable"
-    assert errtext in excinfo.value.args
+    errtext = (
+        "Problem with filters when getting dimensions: Object of type '__NoCanSerialize' is not JSON serializable",
+    )
+    assert errtext == excinfo.value.args
 
 
 def test_get_dimensions_for_datasource_single_page(
@@ -162,5 +164,7 @@ def test_ds_get_dimensions_bad_kwarg(mocker, dm, company_with_int_id):
             company=company_with_int_id, widget=__NoCanSerialize()
         )
 
-    errtext = "Problem with filters when getting dimensions: Object of type __NoCanSerialize is not JSON serializable"
-    assert errtext in excinfo.value.args
+    errtext = (
+        "Problem with filters when getting dimensions: Object of type '__NoCanSerialize' is not JSON serializable",
+    )
+    assert errtext == excinfo.value.args
