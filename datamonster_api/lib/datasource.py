@@ -20,6 +20,9 @@ class Datasource(BaseClass):
         self.uri = uri
         self.dm = dm
 
+    def __hash__(self):
+        return hash(self.id)
+
     def __eq__(self, obj):
         return isinstance(obj, Datasource) and self.id == obj.id
 

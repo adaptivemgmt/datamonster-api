@@ -14,6 +14,12 @@ def test_equality(company, other_company):
     assert company == company
     assert other_company != company
 
+    d = {}
+    d[company] = 1
+    d[other_company] = 2
+    assert len(d) == 2
+    assert d[company] == 1
+
 
 def test_get_companies_1(mocker, dm, single_page_company_results, datasource):
 
