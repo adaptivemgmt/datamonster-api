@@ -26,6 +26,9 @@ class Company(BaseClass):
         ticker_str = "[{}] ".format(self.ticker) if self.ticker else ""
         return "<{}: {}{}>".format(self.__class__.__name__, ticker_str, self.name)
 
+    def __hash__(self):
+        return int(self.id)
+
     def __eq__(self, obj):
         return isinstance(obj, Company) and self.id == obj.id
 
