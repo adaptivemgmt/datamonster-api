@@ -42,5 +42,4 @@ def python_environment(
         local("python3 -m venv {}".format(dir_name))
         local("{}/pip3 install --upgrade pip".format(bin_dir))
         local("{}/pip3 install -r {}".format(bin_dir, path_to_requirements))
-        local("virtualenv --relocatable {}".format(dir_name))
         print("path_to_virtual_env: {}".format(path_to_virtual_env))
