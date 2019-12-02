@@ -191,10 +191,10 @@ def test_get_data_simple():
     df = ds.get_data(company, end_date="2017-09-09")
     assert_data_frame(df, 28)
     records = {
-        "dimensions": {"category": "Wayfair Overall", "country": "US"},
+        "dimensions": {"category": "Wayfair 6-day Adjusted", "country": "US"},
         "end_date": pandas.to_datetime("2014-03-31"),
         "start_date": pandas.to_datetime("2014-03-31"),
-        "value": 0.694088518955128,
+        "value": 0.70154036189355,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))
@@ -205,7 +205,7 @@ def test_get_data_simple():
         "dimensions": {"category": "Wayfair Overall", "country": "US"},
         "end_date": pandas.to_datetime("2016-03-31"),
         "start_date": pandas.to_datetime("2016-03-31"),
-        "value": 0.684296477362873,
+        "value": 0.684391819283361,
         "time_span": datetime.timedelta(days=1),
     }
     assert_frame_equal(df.head(1), pandas.DataFrame.from_records([records]))

@@ -57,6 +57,13 @@ class Client(object):
         session.headers["Accept"] = "application/json"
         session.headers.update(headers)
 
+        retry = requests.packages.urllib3.util.retry.Retry(
+            total=3, backoff_factor=5, status_forcelist=(500, 502, 504)
+        )
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+
         url = "{}{}".format(self.server, path)
         resp = session.get(url, verify=self.verify, stream=stream)
 
