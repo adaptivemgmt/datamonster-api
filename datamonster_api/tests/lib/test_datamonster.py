@@ -17,6 +17,12 @@ def test_equality(datasource, other_datasource):
     assert datasource == datasource
     assert other_datasource != datasource
 
+    d = {}
+    d[datasource] = 1
+    d[other_datasource] = 2
+    assert len(d) == 2
+    assert d[datasource] == 1
+
 
 def test_datamonster_datasource_mapper():
     from pandas.util.testing import assert_frame_equal

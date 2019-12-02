@@ -29,12 +29,12 @@ def other_datasource():
 
 @pytest.fixture
 def company():
-    return Company("id", "ticker", "name", "uri", None)
+    return Company("1", "ticker", "name", "uri", None)
 
 
 @pytest.fixture
 def other_company():
-    return Company("other_id", "other_ticker", "other_name", "other_uri", None)
+    return Company("2", "other_ticker", "other_name", "other_uri", None)
 
 
 @pytest.fixture
