@@ -1,13 +1,9 @@
 import datetime
 import hashlib
 import hmac
-import logging
 import requests
 
 from .errors import DataMonsterError
-
-
-logging.basicConfig(level=logging.DEBUG)  # FOR TESTING PURPOSES
 
 
 class Client(object):
