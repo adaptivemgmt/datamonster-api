@@ -259,7 +259,7 @@ class DataMonster(object):
         """Get data for datasource, providing a raw interface.
 
         :param datasource: Datasource object to get the data for
-        :param **kwargs: unparsed kwargs to get passed as query parameters
+        :param kwargs: unparsed kwargs to get passed as query parameters
 
         :return: schema, pandas.DataFrame
         """
@@ -336,10 +336,6 @@ class DataMonster(object):
         drop_columns = [col for col in split_columns + ["section_pk"] if col in df]
         df.drop(columns=drop_columns, inplace=True)
         return df
-
-    ##############################################
-    #           Dimensions methods
-    ##############################################
 
     def get_dimensions_for_datasource(
         self, datasource, filters=None, add_company_info_from_pks=False
@@ -557,18 +553,18 @@ class DimensionSet(object):
 
     @property
     def pk2company(self):
-        """Empty if `has_extra_company_info` is `False`.
-        If `has_extra_company_info`, this dict maps company pk's (int id's) to `Company`
-        objects. If `pk` is a key in the dict, then `self.pk2company[pk].pk == pk`.
-        The pk's in `pk2company` are those in the `'section_pk'` items of dimension dicts
-        in this collection. (`'section_pk'` items are in the `'split_combination'` subdict
+        """Empty if ``has_extra_company_info`` is **False**.
+        If ``has_extra_company_info``, this dict maps company pk's (int id's) to `Company`
+        objects. If ``pk`` is a key in the dict, then ``self.pk2company[pk].pk == pk``.
+        The pk's in ``pk2company`` are those in the ``section_pk`` items of dimension dicts
+        in this collection. (``section_pk`` items are in the ``split_combination`` subdict
         of a dimension dict.)
 
-        During an iteration, `pk2company` contains all pk's from `'section_pk'` values in
-        dimension dicts *that have been yielded so far*. Thus, `pk2company` is initially
+        During an iteration, ``pk2company`` contains all pk's from ``section_pk`` values in
+        dimension dicts *that have been yielded so far*. Thus, ``pk2company`` is initially
         empty, and isn't fully populated until the iteration completes.
 
-        Note that making a `list` of a `DimensionSet` performs a complete iteration.
+        Note that making a *list* of a ``DimensionSet`` performs a complete iteration.
 
         :return: (dict)
         """
@@ -576,30 +572,30 @@ class DimensionSet(object):
 
     @property
     def min_date(self):
-        """min of the `min_date`s of the dimension dicts
-        :return type: str
+        """
+        :return type: (str) min of the ``min_date`` of the dimension dicts
         """
         return self._min_date
 
     @property
     def max_date(self):
         """
-        (str) max of the `max_date`s of the dimension dicts
+        :return: (str) max of the ``max_date`` of the dimension dicts
         """
         return self._max_date
 
     @property
     def row_count(self):
         """
-        (int) sum of the `row_count`s of the dimension dicts
+        :return: (int) sum of the ``row_count`` of the dimension dicts
         """
         return self._row_count
 
     @property
     def has_extra_company_info(self):
         """
-        (bool) The value passed as `add_company_info_from_pks` to the constructor, coerced
-            to `bool`.
+        :return: (bool) The value passed as ``add_company_info_from_pks`` to the constructor, coerced
+            to *bool*.
         """
         return self._add_company_info_from_pks
 

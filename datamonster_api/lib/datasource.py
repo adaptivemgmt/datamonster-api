@@ -4,13 +4,15 @@ from .errors import DataMonsterError
 
 
 class Datasource(BaseClass):
-    """Datasource object which represents a data source in DataMonster
+    """Representation of a data source in DataMonster
+
     :param params: (dict)
     :param dm: DataMonster object
 
-    Attributes include:
-      name: (str) datasource name
-      category: (str) category associated with the datasource
+    *property* **name**
+        **Returns** (str) datasource name
+    *property* **category**
+        **Returns** (str) category associated with the datasource
     """
 
     def __init__(self, _id, name, category, uri, dm):
@@ -35,9 +37,8 @@ class Datasource(BaseClass):
 
     @property
     def companies(self):
-        """Return the (memoized) companies for this data source.
-
-        :return: (iter) iterable of Company objects
+        """
+        :return: (iter) iterable of Company objects associated with this datasource, memoized
         """
         if not hasattr(self, "_companies"):
             self._companies = self.dm.get_companies(datasource=self)
@@ -66,13 +67,13 @@ class Datasource(BaseClass):
             and it will have a 'section_pk' key, with value
 
                 company.pk               if company is a `Company`,
-                [c.pk for c in company]  if company is a list of `Company`s.
+                [c.pk for c in company]  if company is a list of `Company`
 
         :param add_company_info_from_pks: This method delegates to
             `self.dm.get_dimensions_for_datasource()`, passing this as the value of
-            the keyword parameter of the same name.
+            the keyword parameter of the same name
             This parameter provides a way to skip the lookup and storage of what can be,
-            for some `Datasource`s, a large number of `Company`s.
+            for some `Datasource`s, a large number of `Company` objects
 
         :param kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
 
@@ -112,8 +113,7 @@ class Datasource(BaseClass):
             We add a new key `'ticker'`, whose values are tickers of the companies
             designated by the pk or pk's::
 
-            `dm.get_company_from_pk(pk).ticker`
-                if that is not None,
+            `dm.get_company_from_pk(pk).ticker` if that is not None,
 
             name of company with key `pk`
                 otherwise (actual ticker is `None` or empty)
