@@ -1,8 +1,3 @@
-"""
-.. module:: Company
-   :synopsis: Representing a `Company` object.
-
-"""
 from .base import BaseClass
 
 
