@@ -31,7 +31,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=requires,
-    python_requires="!=3.5.*, !=3.6.*, !=3.7.*",
+    python_requires=">=3.5",
     project_urls={
         "Documentation": "https://datamonster-api.readthedocs.io",
         "Source": "https://github.com/adaptivemgmt/datamonster-api",
