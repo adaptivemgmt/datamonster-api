@@ -31,7 +31,7 @@ setuptools.setup(
     install_requires=requires,
     python_requires="!=3.5.*, !=3.6.*, !=3.7.*",
     project_urls={
-        "Documentation": "https://requests.readthedocs.io",
-        "Source": "https://github.com/psf/requests",
+        "Documentation": "https://datamonster-api.readthedocs.io",
+        "Source": "https://github.com/adaptivemgmt/datamonster-api",
     },
 )
