@@ -1,14 +1,25 @@
+import os
 import setuptools
+
+requires = ["fastavro", "more-itertools", "numpy", "pandas", "requests", "six"]
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+about = {}
+with open(
+    os.path.join(here, "datamonster_api", "__version__.py"), mode="r", encoding="utf-8"
+) as f:
+    exec(f.read(), about)
 
 with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="datamonster_api",
-    version="0.4.8",
-    author="Kevin Thompson",
-    author_email="kevin@adaptivemgmt.com",
-    description="Library for accessing the Datamonster REST API",
+    name=about["__title__"],
+    version=about["__version__"],
+    author=about["__author__"],
+    author_email=about["__author_email__"],
+    description=about["__description__"],
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/adaptivemgmt/datamonster-api",
@@ -19,12 +30,10 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=[
-        "fastavro",
-        "more-itertools",
-        "numpy",
-        "pandas",
-        "requests",
-        "six",
-    ],
+    install_requires=requires,
+    python_requires=">=3.5",
+    project_urls={
+        "Documentation": "https://datamonster-api.readthedocs.io",
+        "Source": "https://github.com/adaptivemgmt/datamonster-api",
+    },
 )

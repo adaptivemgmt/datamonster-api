@@ -4,5 +4,6 @@ from .lib.company import Company  # noqa
 from .lib.datasource import Datasource  # noqa
 from .lib.errors import DataMonsterError  # noqa
 from .lib.utils import format_date  # noqa
+from .__version__ import __version__  # noqa
 
 name = "datamonster_api"
