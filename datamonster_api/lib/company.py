@@ -4,18 +4,19 @@ from .base import BaseClass
 class Company(BaseClass):
     """Representation of a company in DataMonster
 
-    :param _id: (str) uuid of the company
+    :param _id: (str) unique internal identifier for the company
     :param ticker: (str) ticker of the company
     :param name: (str) name of the company
-    :param uri: (str) DataMosnter uri associated with the company
-    :param dm: DataMonster object
+    :param uri: (str) Data Monster resource identifier associated with the company
+    :param dm: ``DataMonster`` object
 
     *property* **ticker**
-        **Returns** (str) company ticker
+        **Returns:** (str) company ticker, ``None`` if company is private
     *property* **name**
-        **Returns** (str) company name
+        **Returns:** (str) company name, including the associated vendor
     *property* **quarters**
-        **Returns** (list) list of company quarter dates
+        **Returns:** (list) list of company quarter dates, including 4 projected dates.
+            Empty if company is private
     """
 
     _details = None
@@ -40,14 +41,14 @@ class Company(BaseClass):
     @property
     def pk(self):
         """
-        :return: (int) the primary key (pk)
+        :return: (int) the unique internal identifier for the company
         """
         return int(self.id)
 
     @property
     def datasources(self):
         """
-        :return: (iter) iterable of Datasource objects associated with this company, memoized
+        :return: (iter) iterable of ``Datasource`` objects associated with this company to which the user has access, memoized
         """
         if not hasattr(self, "_datasources"):
             self._datasources = self.dm.get_datasources(company=self)
@@ -55,8 +56,9 @@ class Company(BaseClass):
         return self._datasources
 
     def get_details(self):
-        """Get details (metadata) for this company
+        """Get details (metadata) for this company with keys:
+            ``id``, ``name``, ``quarters``, ``ticker``, and ``type`` (always company)
 
-        :return: (dict) details
+        :return: (dict) 
         """
         return self.dm.get_company_details(self.id)

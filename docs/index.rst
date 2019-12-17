@@ -17,3 +17,4 @@ This library eases the use of the Datamonster REST API via Python
 
    quickstart
    api
+   examples

@@ -4,6 +4,14 @@
 
 This part of the documentation covers all the interfaces of the datamonster-api.
 
+Interface
+===================
+
+.. autoclass:: datamonster_api.DataMonster
+    :members:
+    :exclude-members: to_json_checked
+
+
 Objects
 ===================
 
@@ -15,9 +23,6 @@ Objects
 
 .. autoclass:: datamonster_api.DimensionSet
     :members:
+    :exclude-members: pk2company
 
-Interface
-===================
-
-.. autoclass:: datamonster_api.DataMonster
-    :members:
+.. autoclass:: datamonster_api.Aggregation
