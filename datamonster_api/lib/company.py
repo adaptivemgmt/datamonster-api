@@ -48,7 +48,8 @@ class Company(BaseClass):
     @property
     def datasources(self):
         """
-        :return: (iter) iterable of ``Datasource`` objects associated with this company to which the user has access, memoized
+        :return: (iter) iterable of ``Datasource`` objects
+            associated with this company to which the user has access, memoized
         """
         if not hasattr(self, "_datasources"):
             self._datasources = self.dm.get_datasources(company=self)
@@ -59,6 +60,6 @@ class Company(BaseClass):
         """Get details (metadata) for this company with keys:
             ``id``, ``name``, ``quarters``, ``ticker``, and ``type`` (always company)
 
-        :return: (dict) 
+        :return: (dict)
         """
         return self.dm.get_company_details(self.id)

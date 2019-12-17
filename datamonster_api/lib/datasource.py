@@ -74,10 +74,10 @@ class Datasource(BaseClass):
         :param kwargs: Additional items to filter by, e.g. ``category='Banana Republic'``
 
         :return: a ``DimensionSet`` object - an iterable through a collection
-            of dimension dicts, filtered as requested. See `this documentation <api.html#datamonster_api.DimensionSet>`_ 
+            of dimension dicts, filtered as requested. See `this documentation <api.html#datamonster_api.DimensionSet>`_
             for more info.
 
-        See `here <examples.html#get-dimensions-for-datasource>`_ 
+        See `here <examples.html#get-dimensions-for-datasource>`_
         for example usage of a similar function.
 
         :raises: can raise ``DataMonsterError`` if company is not of an expected type,
