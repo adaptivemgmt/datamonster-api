@@ -3,13 +3,13 @@
 Quickstart
 ----------
 
-Installing the Datamonster library
+Installing the Datamonster library:
 
 .. code::
 
         pip install datamonster_api
 
-Working with companies
+Working with companies:
 
 .. code::
 
@@ -24,7 +24,7 @@ Working with companies
         print(list(apple.datasources)[:5])          # prints the first 5 datasources that cover apple
 
 
-Working with data sources
+Working with data sources:
 
 .. code::
 
@@ -42,7 +42,7 @@ Working with data sources
         print(list(datasource.companies)[:5])          # Prints the first 5 companies covered by `1010 Debit Sales Index`
 
 
-Getting data
+Getting data:
 
 .. code::
 
