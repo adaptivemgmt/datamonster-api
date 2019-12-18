@@ -66,8 +66,9 @@ class DataMonster(object):
 
         :param ticker: Ticker to search for
 
-        :return: Single ``Company`` object if any companies exactly match the ticker (case insensitive).
-            Raises DataMonsterError otherwise.
+        :return: Single ``Company`` object if any companies exactly match the ticker (case insensitive)
+
+        :raises: ``DataMonsterError`` if no companies match ticker
         """
         ticker = ticker.lower()
         companies = self.get_companies(ticker)
@@ -83,9 +84,11 @@ class DataMonster(object):
         :param company_id: (str or int) unique internal identifier for the desired company.
                            Can take str form e.g. '718', or int form, e.g. 707.
                            In order to find the id of a frequently used company,
-                           find the company by ticker and call .pk on the resulting company object
+                           find the company by ticker and call ``.pk`` on the resulting company object
 
-        :return: Single ``Company`` object if any company matches the id. Raises ``DataMonsterError`` otherwise.
+        :return: Single ``Company`` object if any company matches the id
+
+        :raises: ``DataMonsterError`` if no company matches id
         """
         company = self.get_company_details(company_id)
         company["uri"] = self._get_company_path(company_id)
@@ -98,7 +101,7 @@ class DataMonster(object):
         :param datasource: Optional ``Datasource`` object that restricts companies to those
             covered by the given data source
 
-        :return: Map of ``Company`` objects
+        :return: Iterator of ``Company`` objects
         """
         params = {}
         if query:
@@ -120,8 +123,7 @@ class DataMonster(object):
         :param company_id: (str or int) unique internal identifier for company.
                            See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`_
                            for more info on company_id
-        :return: (dict) details (metadata) for this company, whose keys are:
-            ``id``, ``name``, ``quarters``, ``ticker``, and ``type`` (always company)
+        :return: (dict) details (metadata) for this company, providing basic information as stored in Data Monster
         """
         path = self._get_company_path(company_id)
         return self.client.get(path)
@@ -149,7 +151,7 @@ class DataMonster(object):
         :param company: Optional ``Company`` object that restricts data sources to those that cover
             the given company
 
-        :return: Map of ``Datasource`` objects (iterate through to use)
+        :return: Iterator of ``Datasource`` objects
         """
         params = {}
         if query:
@@ -170,8 +172,9 @@ class DataMonster(object):
 
         :param name: (str)
 
-        :return: Single ``Datasource`` object with the given name,
-         or raises ``DataMonsterError`` if no such data source exists.
+        :return: Single ``Datasource`` object with the given name
+
+        :raises: ``DataMonsterError`` if no data source matches the given name
         """
         for ds in self.get_datasources(query=name):
             if ds.name.lower() == name.lower():
@@ -185,8 +188,9 @@ class DataMonster(object):
 
         :param datasource_id: (str)
 
-        :return: Single ``Datasource`` object with the given id,
-            or raises ``DataMonsterError`` if no such data source exists.
+        :return: Single ``Datasource`` object with the given id
+
+        :raises: ``DataMonsterError`` if no data source matches the given id
         """
         datasource = self.get_datasource_details(datasource_id)
         datasource["uri"] = self._get_datasource_path(datasource_id)
@@ -197,8 +201,8 @@ class DataMonster(object):
 
         :param datasource_id: (str)
 
-        :return: dictionary object with keys:
-            ``aggregationType``, ``cadence``, ``category``, ``earliestData``, ``estimates``, ``fields``
+        :return: (dict) details (metadata) for this data source,
+            providing basic information as stored in Data Monster
         """
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)

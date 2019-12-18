@@ -5,17 +5,16 @@ from .errors import DataMonsterError
 
 
 aggregation_periods = {"week", "month", "quarter", "fiscalQuarter", "year"}
-
 Aggregation = namedtuple("Aggregation", ["period", "company"])
-"""
+
+Aggregation.__doc__ = """
 A representation of an aggregation type within Data Monster
 
 :param str period: The period of time over which to aggregate. Valid choices are:
-    `week`, `month`, `quarter`, `fiscalQuarter`, or `year`.
-
+    {}
 :param company: The ``Company`` object for which fiscal quarters are calculated.
-    Only required or relevant for the `fiscalQuarter` aggregation period.
-"""
+    Only relevant for the `fiscalQuarter` aggregation period.
+""".format(aggregation_periods)
 
 
 def aggregation_sanity_check(aggregation, company=None):

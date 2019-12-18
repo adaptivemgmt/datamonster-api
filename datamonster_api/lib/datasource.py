@@ -16,7 +16,7 @@ class Datasource(BaseClass):
         **Returns** (str) name of data source, including vendor
     *property* **category**
         **Returns** (str) category associated with the data source, e.g.,
-        Web Scrape Data or Uploaded Data
+        `Web Scrape Data` or `Uploaded Data`
     """
 
     def __init__(self, _id, name, category, uri, dm):
@@ -33,10 +33,11 @@ class Datasource(BaseClass):
         return isinstance(obj, Datasource) and self.id == obj.id
 
     def get_details(self):
-        """Get details (metadata) for this data source with keys:
-            ``aggregationType``, ``cadence``, ``category``, ``earliestData``, ``estimates``, ``fields``
+        """
+        Get details (metadata) for this data source,
+        providing basic information as stored in Data Monster
 
-        :return: (dict) details
+        :return: (dict)
         """
         return self.dm.get_datasource_details(self.id)
 
@@ -56,9 +57,9 @@ class Datasource(BaseClass):
         :param company: ``Company`` object to filter the data source on
         :param aggregation: Optional ``Aggregation`` object to specify the aggregation of the data
         :param start_date: Optional string to act as a filter for the start date of the data; accepted formats include:
-            YYYY-MM-DD or MM/DD/YYYY
+            YYYY-MM-DD, MM/DD/YYYY, or pandas or regular ``datetime`` object
         :param end_date: Optional string to act as a filter for the end date of the data; accepted formats include:
-            YYYY-MM-DD or MM/DD/YYYY
+            YYYY-MM-DD or MM/DD/YYYY, or pandas or regular ``datetime`` object
         :return: pandas.DataFrame
         """
         return self.dm.get_data(self, company, aggregation, start_date, end_date)

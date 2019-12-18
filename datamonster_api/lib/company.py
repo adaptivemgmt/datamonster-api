@@ -57,8 +57,9 @@ class Company(BaseClass):
         return self._datasources
 
     def get_details(self):
-        """Get details (metadata) for this company with keys:
-            ``id``, ``name``, ``quarters``, ``ticker``, and ``type`` (always company)
+        """
+        Get details (metadata) for this company,
+        providing basic information as stored in Data Monster
 
         :return: (dict)
         """

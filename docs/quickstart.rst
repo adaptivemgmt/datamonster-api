@@ -16,30 +16,37 @@ Working with companies:
         from datamonster_api import DataMonster
         dm = DataMonster(<key_id>, <secret_key>)
 
-        print(list(dm.get_companies(query='hd')))   # Prints all companies whose name or ticker matches 'hd'
+        # Prints all companies whose name or ticker matches 'hd'
+        print(list(dm.get_companies(query='hd')))   
 
-        apple = dm.get_company_by_ticker('aapl')    # Creates a company object for apple
+        # Creates a company object for apple
+        apple = dm.get_company_by_ticker('aapl')    
 
-        print(apple.quarters[:5])                   # prints first 5 quarter end dates
-        print(list(apple.datasources)[:5])          # prints the first 5 datasources that cover apple
+        # prints the first 5 quarter end dates
+        print(apple.quarters[:5])      
+
+        # prints the first 5 datasources that cover apple
+        print(list(apple.datasources)[:5])          
 
 
 Working with data sources:
 
 .. code::
 
-        print(list(dm.get_datasources(query='1010')))   # Prints all data sources whose name or provider matches '1010'
+        # Prints all data sources whose name or provider matches 'fake'
+        print(list(dm.get_datasources(query='fake')))   
 
-        print(list(                                     # Prints all data sources whose name or provider matches '1010'
-            dm.get_datasources(                         # AND also cover apple
-                query='1010',
-                company=apple)
-            )
-        )
+        # Prints all data sources whose name or provider matches 'fake' 
+        # AND also cover apple
+        print(list(dm.get_datasources(query='fake', company=apple)))
 
-        datasource = list(dm.get_datasources(query='1010 Debit Sales Index'))[0]
 
-        print(list(datasource.companies)[:5])          # Prints the first 5 companies covered by `1010 Debit Sales Index`
+        # Prints first 5 companies covered by `Fake Data Source`
+        datasource = list(
+                dm.get_datasources(query='Fake Data Source')
+                )[0]
+
+        print(list(datasource.companies)[:5])          
 
 
 Getting data:
@@ -49,14 +56,20 @@ Getting data:
         import datetime
         from datamonster_api import Aggregation
 
+        # Gets a datasource object
         apple = dm.get_company_by_ticker('aapl')
-        datasource = next(apple.datasources)        # Gets a datasource object
-        datasource.get_data(apple)                  # Gets all data for the datasource filtering on apple
+        datasource = next(apple.datasources)  
+
+        # Gets all data for the datasource filtering on apple     
+        datasource.get_data(apple)                  
 
         agg = Aggregation(period='fiscalQuarter', company=apple)
 
-        datasource.get_data(                        # Gets all data for the given datasource filtered by apple,
-            apple,                                  # aggregated by apple's fiscal quarter, and starting on
-            agg,                                    # January 1, 2017 (inclusive)
+        # Gets all data for the given datasource filtered by apple,
+        # aggregated by apple's fiscal quarter, and starting on
+        # January 1, 2017 (inclusive)
+        datasource.get_data(                        
+            apple,                                  
+            agg,                                    
             start_date=datetime.date(2017, 1, 1)
         )
