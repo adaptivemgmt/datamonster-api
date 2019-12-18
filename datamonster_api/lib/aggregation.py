@@ -14,7 +14,9 @@ A representation of an aggregation type within Data Monster
     {}
 :param company: The ``Company`` object for which fiscal quarters are calculated.
     Only relevant for the `fiscalQuarter` aggregation period.
-""".format(aggregation_periods)
+""".format(
+    aggregation_periods
+)
 
 
 def aggregation_sanity_check(aggregation, company=None):

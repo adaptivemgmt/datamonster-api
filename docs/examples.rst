@@ -47,7 +47,7 @@ Next, looking at the dataframe we see:
 
     >>> df.head(2)
 
-.. list-table:: 
+.. list-table::
    :header-rows: 1
 
    * - category
@@ -60,10 +60,10 @@ Next, looking at the dataframe we see:
      - 2017-01-01
      - 2016-10-02
      - 617
-   * - Not Specified	
-     - -0.0523	
-     - 2018-07-02	
-     - 2018-04-02	
+   * - Not Specified
+     - -0.0523
+     - 2018-07-02
+     - 2018-04-02
      - 742
 
 Note that the ``section_pk`` column, which represents which company each data point refers to, is currently in the form of
@@ -74,7 +74,7 @@ an internal Data Monster identifier and is not particularly useful for external 
     comps = ds.companies
     section_map = {}
     for comp in comps:
-        section_map[comp.pk] = {"name": comp.name, 
+        section_map[comp.pk] = {"name": comp.name,
                                 "ticker": comp.ticker}
 
     def map_pk_to_ticker_and_name(section_map, df):
@@ -100,7 +100,7 @@ We can now use ``map_pk_to_ticker_and_name`` to produce a more human-readable da
 
     >>> map_pk_to_ticker_and_name(section_map, df).head(2)
 
-.. list-table:: 
+.. list-table::
    :header-rows: 1
 
    * - category
@@ -115,10 +115,10 @@ We can now use ``map_pk_to_ticker_and_name`` to produce a more human-readable da
      - 2016-10-02
      - PRTY
      - PARTY CITY
-   * - Not Specified	
-     - -0.0523	
-     - 2018-07-02	
-     - 2018-04-02	
+   * - Not Specified
+     - -0.0523
+     - 2018-07-02
+     - 2018-04-02
      - RUTH
      - RUTH'S HOSPITALITY GROUP
 
@@ -138,8 +138,8 @@ Will give all rows from the data source dated on or after 01/01/2018. Similarly:
     dated_schema, dated_df = dm.get_raw_data(
         ds, period_end__lt="2018-01-01"
     )
-    
-Will return all rows from the data source dated entirely before 01/01/2018. 
+
+Will return all rows from the data source dated entirely before 01/01/2018.
 Lastly, we can use a workaround to get all data where category is specified:
 
 .. code::
@@ -154,9 +154,9 @@ Lastly, we can use a workaround to get all data where category is specified:
 
     pd.concat([filtered_df1, filtered_df2]).head()
 
-This trick is necessary as the REST API does not currently allow for excluding strings. 
+This trick is necessary as the REST API does not currently allow for excluding strings.
 
-More generally, to use a filter, pass ``<column>__<filter> = <filter criterium>`` as a keyword 
+More generally, to use a filter, pass ``<column>__<filter> = <filter criterium>`` as a keyword
 argument into ``get_raw_data`` (note the double underscore).
 These are all the supported filters:
 
