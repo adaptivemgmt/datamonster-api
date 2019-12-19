@@ -4,12 +4,12 @@ from .errors import DataMonsterError
 
 
 class Datasource(BaseClass):
-    """Representation of a data source in Data Monster
+    """Representation of a data source in DataMonster
 
     :param _id: (str) uniquer internal identifier for the data source
     :param name: (dict) name of the data source, including the vendor for the data
     :param category: (list) associated categories
-    :param uri: (str) Data Monster resource identifier associated with the data source
+    :param uri: (str) DataMonster resource identifier associated with the data source
     :param dm: ``DataMonster`` object
 
     *property* **name**
@@ -35,7 +35,7 @@ class Datasource(BaseClass):
     def get_details(self):
         """
         Get details (metadata) for this data source,
-        providing basic information as stored in Data Monster
+        providing basic information as stored in DataMonster
 
         :return: (dict)
         """

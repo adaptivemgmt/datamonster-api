@@ -8,7 +8,7 @@ aggregation_periods = {"week", "month", "quarter", "fiscalQuarter", "year"}
 Aggregation = namedtuple("Aggregation", ["period", "company"])
 
 Aggregation.__doc__ = """
-A representation of an aggregation type within Data Monster
+A representation of an aggregation type within DataMonster
 
 :param str period: The period of time over which to aggregate. Valid choices are:
     {}

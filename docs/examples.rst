@@ -67,7 +67,7 @@ Next, looking at the dataframe we see:
      - 742
 
 Note that the ``section_pk`` column, which represents which company each data point refers to, is currently in the form of
-an internal Data Monster identifier and is not particularly useful for external use. To convert to a more usable form, try:
+an internal DataMonster identifier and is not particularly useful for external use. To convert to a more usable form, try:
 
 ..  code::
 

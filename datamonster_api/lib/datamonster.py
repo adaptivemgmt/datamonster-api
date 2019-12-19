@@ -20,7 +20,7 @@ class DataMonster(object):
     :param key_id: (str) a user's public key
     :param secret: (str) a user's secret key
     :param server: (optional, str) default to dm.adaptivemgmt.com
-    :param verify: (optional, bool) whether to very the server's TLS certificate
+    :param verify: (optional, bool) whether to verify the server's TLS certificate
     """
 
     company_path = "/rest/v1/company"
@@ -84,7 +84,7 @@ class DataMonster(object):
         :param company_id: (str or int) unique internal identifier for the desired company.
                            Can take str form e.g. '718', or int form, e.g. 707.
                            In order to find the id of a frequently used company,
-                           find the company by ticker and call ``.pk`` on the resulting company object
+                           find the company by ticker and call ``.pk`` on the resulting ``Company`` object
 
         :return: Single ``Company`` object if any company matches the id
 
@@ -123,7 +123,7 @@ class DataMonster(object):
         :param company_id: (str or int) unique internal identifier for company.
                            See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`_
                            for more info on company_id
-        :return: (dict) details (metadata) for this company, providing basic information as stored in Data Monster
+        :return: (dict) details (metadata) for this company, providing basic information as stored in DataMonster
         """
         path = self._get_company_path(company_id)
         return self.client.get(path)
@@ -202,7 +202,7 @@ class DataMonster(object):
         :param datasource_id: (str)
 
         :return: (dict) details (metadata) for this data source,
-            providing basic information as stored in Data Monster
+            providing basic information as stored in DataMonster
         """
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
@@ -243,7 +243,7 @@ class DataMonster(object):
         :param start_date: Optional filter for the start date of the data
         :param end_date: Optional filter for the end date of the data
 
-        See here for an `example <quickstart.html#>`_.
+        See `here <quickstart.html#>`_ for example usage.
 
         :return: pandas.DataFrame
         """
@@ -288,8 +288,7 @@ class DataMonster(object):
 
         :return: (schema, pandas.DataFrame)
 
-        See `this <examples.html#get-raw-data>`_
-        for example usage.
+        See `here <examples.html#get-raw-data>`_ for example usage.
         """
         headers = {"Accept": "avro/binary"}
         url = self._get_rawdata_path(datasource.id, kwargs)

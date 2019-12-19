@@ -7,7 +7,7 @@ class Company(BaseClass):
     :param _id: (str) unique internal identifier for the company
     :param ticker: (str) ticker of the company
     :param name: (str) name of the company
-    :param uri: (str) Data Monster resource identifier associated with the company
+    :param uri: (str) DataMonster resource identifier associated with the company
     :param dm: ``DataMonster`` object
 
     *property* **ticker**
@@ -59,7 +59,7 @@ class Company(BaseClass):
     def get_details(self):
         """
         Get details (metadata) for this company,
-        providing basic information as stored in Data Monster
+        providing basic information as stored in DataMonster
 
         :return: (dict)
         """
