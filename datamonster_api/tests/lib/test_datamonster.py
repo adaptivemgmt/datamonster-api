@@ -28,15 +28,15 @@ def test_datamonster_datasource_mapper():
     from pandas.util.testing import assert_frame_equal
 
     df = pandas.DataFrame.from_records([])
-    print(assert_frame_equal(DataMonster.datamonster_data_mapper({}, {}, df), df))
-    assert_frame_equal(DataMonster.datamonster_data_mapper({}, {}, df), df)
+    print(assert_frame_equal(DataMonster._datamonster_data_mapper({}, {}, df), df))
+    assert_frame_equal(DataMonster._datamonster_data_mapper({}, {}, df), df)
 
     df = pandas.DataFrame.from_records([{"apple": 1, "banana": 2, "cherry": 3}])
     with pytest.raises(DataMonsterError):
-        DataMonster.datamonster_data_mapper({"garbage": "g"}, {"split": "apple"}, df)
+        DataMonster._datamonster_data_mapper({"garbage": "g"}, {"split": "apple"}, df)
 
     with pytest.raises(DataMonsterError):
-        DataMonster.datamonster_data_mapper(
+        DataMonster._datamonster_data_mapper(
             {"fruits": "value"}, {"fruits": ["apple", "banana"]}, df
         )
 

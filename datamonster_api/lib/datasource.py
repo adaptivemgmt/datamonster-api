@@ -6,16 +6,17 @@ from .errors import DataMonsterError
 class Datasource(BaseClass):
     """Representation of a data source in DataMonster
 
-    :param _id: (str) uuid of the data source
-    :param name: (dict) name of the data source
+    :param _id: (str) uniquer internal identifier for the data source
+    :param name: (dict) name of the data source, including the vendor for the data
     :param category: (list) associated categories
-    :param uri: (str) DataMosnter uri associated with the data source
-    :param dm: DataMonster object
+    :param uri: (str) DataMonster resource identifier associated with the data source
+    :param dm: ``DataMonster`` object
 
     *property* **name**
-        **Returns** (str) datasource name
+        **Returns** (str) name of data source, including vendor
     *property* **category**
-        **Returns** (str) category associated with the datasource
+        **Returns** (str) category associated with the data source, e.g.,
+        `Web Scrape Data` or `Uploaded Data`
     """
 
     def __init__(self, _id, name, category, uri, dm):
@@ -32,16 +33,18 @@ class Datasource(BaseClass):
         return isinstance(obj, Datasource) and self.id == obj.id
 
     def get_details(self):
-        """Get details (metadata) for this datasource
+        """
+        Get details (metadata) for this data source,
+        providing basic information as stored in DataMonster
 
-        :return: (dict) details
+        :return: (dict)
         """
         return self.dm.get_datasource_details(self.id)
 
     @property
     def companies(self):
         """
-        :return: (iter) iterable of Company objects associated with this datasource, memoized
+        :return: (iter) iterable of ``Company`` objects associated with this data source, memoized
         """
         if not hasattr(self, "_companies"):
             self._companies = self.dm.get_companies(datasource=self)
@@ -49,79 +52,36 @@ class Datasource(BaseClass):
         return self._companies
 
     def get_data(self, company, aggregation=None, start_date=None, end_date=None):
-        """Get data for this datasource.
+        """Get data for this data source.
 
-        :param company: Company object to filter the datasource on
-        :param aggregation: Optional Aggregation object to specify the aggregation of the data
-        :param start_date: Optional filter for the start date of the data
-        :param end_date: Optional filter for the end date of the data
-
-        :return: pandas DataFrame
+        :param company: ``Company`` object to filter the data source on
+        :param aggregation: Optional ``Aggregation`` object to specify the aggregation of the data
+        :param start_date: Optional string to act as a filter for the start date of the data; accepted formats include:
+            YYYY-MM-DD, MM/DD/YYYY, or pandas or regular ``datetime`` object
+        :param end_date: Optional string to act as a filter for the end date of the data; accepted formats include:
+            YYYY-MM-DD or MM/DD/YYYY, or pandas or regular ``datetime`` object
+        :return: pandas.DataFrame
         """
         return self.dm.get_data(self, company, aggregation, start_date, end_date)
 
     def get_dimensions(self, company=None, add_company_info_from_pks=True, **kwargs):
         """Return the dimensions for this data source,
-        restricted to `company` (/companies) if given, and filtered by any kwargs items.
-        Not memoized, or we'd be holding onto exhausted iterators AND returning them later.
+            restricted to the given company or companies and filtered by any kwargs items. Not memoized.
 
-        :param company: a `Company`, a list or tuple of `Company`s, or `None`.
-            If not None, a filters dict will be used when getting dimensions,
-            and it will have a 'section_pk' key, with value
+        :param company: a ``Company`` object, a list or tuple of ``Company`` objects, or ``None``.
+            If not ``None`` the return value will only include rows corresponding to the given companies.
+        :param add_company_info_from_pks: Determines whether return value will include tickers for
+            the returned companies. If ``False``, only ``section_pk`` s will be returned.
+        :param kwargs: Additional items to filter by, e.g. ``category='Banana Republic'``
 
-                company.pk               if company is a `Company`,
-                [c.pk for c in company]  if company is a list of `Company`
+        :return: a ``DimensionSet`` object - an iterable through a collection
+            of dimension dicts, filtered as requested. See `this documentation <api.html#datamonster_api.DimensionSet>`_
+            for more info.
 
-        :param add_company_info_from_pks: This method delegates to
-            `self.dm.get_dimensions_for_datasource()`, passing this as the value of
-            the keyword parameter of the same name
-            This parameter provides a way to skip the lookup and storage of what can be,
-            for some `Datasource`s, a large number of `Company` objects
+        See `here <examples.html#get-dimensions-for-datasource>`__
+        for example usage of a similar function.
 
-        :param kwargs: Additional items to filter by, e.g. `category='Banana Republic'`
-
-        :return: a `DimensionSet` object - an iterable through a collection
-            of dimension dicts, filtered as requested.
-            Each dimension dict has these keys:
-            'max_date', 'min_date', 'row_count', 'split_combination'.
-            The first two are dates, as strings in ISO format; `'row_count'` is an int;
-            `'split_combination'` is a dict, containing keys for this datasource --
-            things you can filter for using keyword arguments.
-
-            EXAMPLE
-
-            Assuming `dm` is a DataMonster object, and given this datasource and company:
-
-                datasource = next(dm.get_datasources(query='1010data Credit Sales Index'))
-                the_gap = dm.get_company_by_ticker('GPS')
-
-            this call to `get_dimensions`::
-
-                dimset = datasource.get_dimensions( company=the_gap,
-                                                    category='Banana Republic' )
-
-            returns an iterable, `dimset`, to this list with just one dimensions dict::
-
-                {'max_date': '2019-06-21',
-                 'min_date': '2014-01-01',
-                 'row_count': 1998,
-                 'split_combination': {'category': 'Banana Republic',
-                                       'country': 'US',
-                                       'ticker': 'GPS'}}]
-
-            In each 'split_combination' subdict as supplied by Oasis, if there is a
-            `'section_pk'` key, its value will be a company primary key (pk, an int),
-            or a list of company primary keys, or `None`.
-
-            We add a new key `'ticker'`, whose values are tickers of the companies
-            designated by the pk or pk's::
-
-            `dm.get_company_from_pk(pk).ticker` if that is not None,
-
-            name of company with key `pk`
-                otherwise (actual ticker is `None` or empty)
-
-        :raises: can raise `DataMonsterError` if company is not of an expected type,
+        :raises: can raise ``DataMonsterError`` if company is not of an expected type,
             or if some kwarg item is not JSON-serializable.
         """
         filters = kwargs

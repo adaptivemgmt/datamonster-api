@@ -18,9 +18,9 @@ class DataMonster(object):
     """DataMonster object. Main entry point to the library
 
     :param key_id: (str) a user's public key
-    :param secret: (str) a user's secrey key
+    :param secret: (str) a user's secret key
     :param server: (optional, str) default to dm.adaptivemgmt.com
-    :param verify: (optional, bool)
+    :param verify: (optional, bool) whether to verify the server's TLS certificate
     """
 
     company_path = "/rest/v1/company"
@@ -66,8 +66,9 @@ class DataMonster(object):
 
         :param ticker: Ticker to search for
 
-        :return: Single Company object if any companies exactly match the ticker.
-            Raises DataMonsterError otherwise.
+        :return: Single ``Company`` object if any companies exactly match the ticker (case insensitive)
+
+        :raises: ``DataMonsterError`` if no companies match ticker
         """
         ticker = ticker.lower()
         companies = self.get_companies(ticker)
@@ -80,10 +81,14 @@ class DataMonster(object):
     def get_company_by_id(self, company_id):
         """Get a single company by id
 
-        :param company_id: (str or int) company_id to search for;
-                           str form of pk, e.g. '718', or pk e.g. 707
+        :param company_id: (str or int) unique internal identifier for the desired company.
+                           Can take str form e.g. '718', or int form, e.g. 707.
+                           In order to find the id of a frequently used company,
+                           find the company by ticker and call ``.pk`` on the resulting ``Company`` object
 
-        :return: Single Company if any company matches the id.  Raises DataMonsterError otherwise.
+        :return: Single ``Company`` object if any company matches the id
+
+        :raises: ``DataMonsterError`` if no company matches id
         """
         company = self.get_company_details(company_id)
         company["uri"] = self._get_company_path(company_id)
@@ -93,10 +98,10 @@ class DataMonster(object):
         """Get available companies
 
         :param query: Optional query that will restrict companies by ticker or name
-        :param datasource: Optional Datasource object that restricts companies to those
-            covered by the given datasource
+        :param datasource: Optional ``Datasource`` object that restricts companies to those
+            covered by the given data source
 
-        :return: List of Company objects
+        :return: Iterator of ``Company`` objects
         """
         params = {}
         if query:
@@ -115,8 +120,10 @@ class DataMonster(object):
     def get_company_details(self, company_id):
         """Get details for the given company
 
-        :param company_id: (str or int) The ID of the company for which we get the details
-        :return: dictionary object with the company details
+        :param company_id: (str or int) unique internal identifier for company.
+                           See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`__
+                           for more info on company_id
+        :return: (dict) details (metadata) for this company, providing basic information as stored in DataMonster
         """
         path = self._get_company_path(company_id)
         return self.client.get(path)
@@ -140,11 +147,11 @@ class DataMonster(object):
     def get_datasources(self, query=None, company=None):
         """Get available datasources
 
-        :param query: Optional query that will restrict datasources by name or provider name
-        :param company: Optional Company object that restricts datasource to those that cover
+        :param query: (str) Optional query that will restrict data sources by name or provider name
+        :param company: Optional ``Company`` object that restricts data sources to those that cover
             the given company
 
-        :return: List of Datasource objects
+        :return: Iterator of ``Datasource`` objects
         """
         params = {}
         if query:
@@ -161,7 +168,14 @@ class DataMonster(object):
         return six.moves.map(self._datasource_result_to_object, datasources)
 
     def get_datasource_by_name(self, name):
-        """Given a name, try to find a datasource"""
+        """Given a name, try to find a data source of that name
+
+        :param name: (str)
+
+        :return: Single ``Datasource`` object with the given name
+
+        :raises: ``DataMonsterError`` if no data source matches the given name
+        """
         for ds in self.get_datasources(query=name):
             if ds.name.lower() == name.lower():
                 return ds
@@ -170,16 +184,25 @@ class DataMonster(object):
         )
 
     def get_datasource_by_id(self, datasource_id):
-        """Given an ID, fill in a datasource"""
+        """Given a data source uuid, return the corresponding ``Datasource`` object
+
+        :param datasource_id: (str)
+
+        :return: Single ``Datasource`` object with the given id
+
+        :raises: ``DataMonsterError`` if no data source matches the given id
+        """
         datasource = self.get_datasource_details(datasource_id)
         datasource["uri"] = self._get_datasource_path(datasource_id)
         return self._datasource_result_to_object(datasource, has_details=True)
 
     def get_datasource_details(self, datasource_id):
-        """Get details (metadata) for the given datasource
+        """Get details (metadata) for the data source corresponding to the given id
 
-        :param datasource_id: The ID of the datasource for which we get the details
-        :return: dictionary object with the datasource details
+        :param datasource_id: (str)
+
+        :return: (dict) details (metadata) for this data source,
+            providing basic information as stored in DataMonster
         """
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
@@ -212,15 +235,17 @@ class DataMonster(object):
     def get_data(
         self, datasource, company, aggregation=None, start_date=None, end_date=None
     ):
-        """Get data for datasource.
+        """Get data for data source
 
-        :param datasource: Datasource object to get the data for
-        :param company: Company object to filter the datasource on
-        :param aggregation: Optional Aggregation object to specify the aggregation of the data
+        :param datasource: ``Datasource`` object to get the data for
+        :param company: ``Company`` object to filter the data source on
+        :param aggregation: Optional ``Aggregation`` object to specify the aggregation of the data
         :param start_date: Optional filter for the start date of the data
         :param end_date: Optional filter for the end date of the data
 
-        :return: pandas DataFrame
+        See `here <quickstart.html#>`__ for example usage.
+
+        :return: pandas.DataFrame
         """
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
@@ -247,7 +272,7 @@ class DataMonster(object):
         schema, df = self.get_raw_data(datasource, **params)
 
         if datasource.type == "datasource":
-            df = self.datamonster_data_mapper(
+            df = self._datamonster_data_mapper(
                 self.DATAMONSTER_SCHEMA_FIELDS, schema, df
             )
 
@@ -256,12 +281,14 @@ class DataMonster(object):
         return df
 
     def get_raw_data(self, datasource, **kwargs):
-        """Get data for datasource, providing a raw interface. Use with caution.
+        """Get raw data for all companies available in the data source.
 
-        :param datasource: Datasource object to get the data for
-        :param kwargs: unparsed kwargs to get passed as query parameters
+        :param datasource: ``Datasource`` object to get the data for
+        :param kwargs: unparsed ``kwargs`` to get passed as query parameters
 
         :return: (schema, pandas.DataFrame)
+
+        See `here <examples.html#get-raw-data>`__ for example usage.
         """
         headers = {"Accept": "avro/binary"}
         url = self._get_rawdata_path(datasource.id, kwargs)
@@ -294,8 +321,8 @@ class DataMonster(object):
         return metadata, pandas.DataFrame.from_records(records)
 
     @staticmethod
-    def datamonster_data_mapper(mapping_fields, schema, df):
-        """mapping function applied to a DataMonster data source to format the data
+    def _datamonster_data_mapper(mapping_fields, schema, df):
+        """mapping function applied to a ``DataMonster`` data source to format the data
 
         :param mapping_fields (dict): mapping of column names to rename from in the schema
         :param schema (dict): avro schema of the data
@@ -340,60 +367,25 @@ class DataMonster(object):
     def get_dimensions_for_datasource(
         self, datasource, filters=None, add_company_info_from_pks=False
     ):
-        """Get dimensions ("splits") for the data source (data fountain)
-        from the DataMonster REST endpoint '/datasource/<uuid>/dimensions?filters=...
-        where the filters string is optional.
+        """Get dimensions ("splits") for the data source
+            from the DataMonster REST endpoint ``/datasource/<uuid>/dimensions?filters=...``
+            where the ``filters`` string is optional.
 
-        :param datasource: an Oasis data fountain `Datasource`.
+        :param datasource:  ``Datasource`` object
         :param filters: (dict): a dict of key/value pairs to filter
-                dimensions by.
-        :param add_company_info_from_pks: (bool) If True, create `'ticker'` items
-            from `'section_pk'` items in (`'split_combination'` subdicts of) dimension dicts,
-            and create a mapping from section pk's to `Company`s, available as `pk2company`
-            on the returned `DimensionSet`; if False, don't.
-            `Datasource.get_dimensions()` delegates to this method, and calls with
-            `add_company_info_from_pks=True`.
+                dimensions by
+        :param add_company_info_from_pks: (bool): Determines whether return value will include tickers for
+            the returned companies. If ``False``, only ``section_pk`` s will be returned.
 
-        :return: a `DimensionSet` object - an iterable through a collection
-            of dimension dicts, filtered as requested.
+        See `here <examples.html#get-dimensions-for-datasource>`__
+        for example usage.
 
-            Each dimension dict has these keys:
-            'max_date', 'min_date', 'row_count', 'split_combination'.
-            The first two are dates, as strings in ISO format; `'row_count'` is an int;
-            `'split_combination'` is a dict, containing keys for this datasource --
-            things you can filter for.
+        :return: a ``DimensionSet`` object - an iterable through a collection
+            of dimension dicts, filtered as requested. See `this documentation <api.html#datamonster_api.DimensionSet>`_
+            for more info on ``DimensionSet`` objects.
 
-            EXAMPLE
-
-            Assuming `dm` is a DataMonster object, and given this datasource and company::
-
-                datasource = next(dm.get_datasources(query='1010data Credit Sales Index'))
-                the_gap = dm.get_company_by_ticker('GPS')
-
-            this call to `get_dimensions_for_datasource`::
-
-                dimset = dm.get_dimensions_for_datasource(
-                                datasource,
-                                filters={'section_pk': the_gap.pk,
-                                         'category': 'Banana Republic'})
-
-            returns an iterable, `dimset`, to a collection with just one dimensions dict.
-            Assuming `from pprint import pprint`, the following loop::
-
-                for dim in dimset:
-                    pprint(dim)
-
-            prettyprints the single dimension dict::
-
-                {'max_date': '2019-06-21',
-                 'min_date': '2014-01-01',
-                 'row_count': 1998,s
-                 'split_combination': {'category': 'Banana Republic',
-                                       'country': 'US',
-                                       'section_pk': 707}}]
-
-        :raises: DataMonsterError if `filters` is not a dict or is not JSON-serializable.
-            Re-raises `DataMonsterError` if self.client.get() raises that.
+        :raises: ``DataMonsterError`` if ``filters`` is not a dict or is not JSON-serializable.
+            Re-raises ``DataMonsterError`` if ``self.client.get()`` raises that.
         """
         self._check_param(datasource=datasource)
 
@@ -437,20 +429,22 @@ class DataMonster(object):
 
 class DimensionSet(object):
     """
-    An iterable through a collection of *dimension dicts*
+    An iterable through a collection of dimensions dictionaries.
 
-    Each dimension dict has these keys:
-    'max_date', 'min_date', 'row_count', 'split_combination'.
-    The first two are dates, as strings in ISO format; ``row_count`` is an int;
-    ``split_combination`` is a dict.
+    Each dimension dictionary has 4 keys:
+    ``max_date``, ``min_date``, ``row_count``, and ``split_combination``.
+    The first two have values that are dates as strings in ISO format;
+    ``split_combination`` points to a dict containing data from all other columns;
+    ``row_count`` points to an int specifying how many rows match the dates and all splits in ``split_combination``
+
     """
 
     def __init__(self, url, dm, add_company_info_from_pks):
         """
         :param url: (string) URL for REST endpoint
         :param dm: DataMonster object
-        :param add_company_info_from_pks: (bool) If True, create ticker items from
-         'section_pk' items.
+        :param add_company_info_from_pks: (bool) If ``True``, create ticker items from
+         ``section_pk`` items.
         """
         self._url_orig = url
 
@@ -528,8 +522,8 @@ class DimensionSet(object):
 
     @property
     def pk2company(self):
-        """Empty if ``has_extra_company_info`` is **False**.
-        If ``has_extra_company_info``, this dict maps company pk's (int id's) to `Company`
+        """Empty if ``has_extra_company_info`` is ``False``.
+        If ``has_extra_company_info``, this dict maps company pk's (int id's) to ``Company``
         objects. If ``pk`` is a key in the dict, then ``self.pk2company[pk].pk == pk``.
         The pk's in ``pk2company`` are those in the ``section_pk`` items of dimension dicts
         in this collection. (``section_pk`` items are in the ``split_combination`` subdict
@@ -562,7 +556,7 @@ class DimensionSet(object):
     @property
     def row_count(self):
         """
-        :return: (int) sum of the ``row_count`` of the dimension dicts
+        :return: (int) number of rows matching the filters for this ``DimensionSet``
         """
         return self._row_count
 
