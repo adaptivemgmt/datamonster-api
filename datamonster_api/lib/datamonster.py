@@ -121,7 +121,7 @@ class DataMonster(object):
         """Get details for the given company
 
         :param company_id: (str or int) unique internal identifier for company.
-                           See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`_
+                           See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`__
                            for more info on company_id
         :return: (dict) details (metadata) for this company, providing basic information as stored in DataMonster
         """
@@ -243,7 +243,7 @@ class DataMonster(object):
         :param start_date: Optional filter for the start date of the data
         :param end_date: Optional filter for the end date of the data
 
-        See `here <quickstart.html#>`_ for example usage.
+        See `here <quickstart.html#>`__ for example usage.
 
         :return: pandas.DataFrame
         """
@@ -288,7 +288,7 @@ class DataMonster(object):
 
         :return: (schema, pandas.DataFrame)
 
-        See `here <examples.html#get-raw-data>`_ for example usage.
+        See `here <examples.html#get-raw-data>`__ for example usage.
         """
         headers = {"Accept": "avro/binary"}
         url = self._get_rawdata_path(datasource.id, kwargs)
@@ -377,7 +377,7 @@ class DataMonster(object):
         :param add_company_info_from_pks: (bool): Determines whether return value will include tickers for
             the returned companies. If ``False``, only ``section_pk`` s will be returned.
 
-        See `here <examples.html#get-dimensions-for-datasource>`_
+        See `here <examples.html#get-dimensions-for-datasource>`__
         for example usage.
 
         :return: a ``DimensionSet`` object - an iterable through a collection

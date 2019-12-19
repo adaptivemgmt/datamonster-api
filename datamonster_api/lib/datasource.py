@@ -78,7 +78,7 @@ class Datasource(BaseClass):
             of dimension dicts, filtered as requested. See `this documentation <api.html#datamonster_api.DimensionSet>`_
             for more info.
 
-        See `here <examples.html#get-dimensions-for-datasource>`_
+        See `here <examples.html#get-dimensions-for-datasource>`__
         for example usage of a similar function.
 
         :raises: can raise ``DataMonsterError`` if company is not of an expected type,
