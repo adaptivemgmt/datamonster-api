@@ -25,7 +25,7 @@ Working with companies:
         # prints the first 5 quarter end dates
         print(apple.quarters[:5])
 
-        # prints the first 5 datasources that cover apple
+        # prints the first 5 data sources that cover apple
         print(list(apple.datasources)[:5])
 
 
@@ -65,7 +65,7 @@ Getting data:
 
         agg = Aggregation(period='fiscalQuarter', company=apple)
 
-        # Gets all data for the given datasource filtered by apple,
+        # Gets all data for the given data source filtered by apple,
         # aggregated by apple's fiscal quarter, and starting on
         # January 1, 2017 (inclusive)
         datasource.get_data(

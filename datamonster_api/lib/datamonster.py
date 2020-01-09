@@ -121,7 +121,7 @@ class DataMonster(object):
         """Get details for the given company
 
         :param company_id: (str or int) unique internal identifier for company.
-                           See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`__
+                           See the method `get_company_by_id <api.html#datamonster_api.DataMonster.get_company_by_id>`__
                            for more info on company_id
         :return: (dict) details (metadata) for this company, providing basic information as stored in DataMonster
         """
