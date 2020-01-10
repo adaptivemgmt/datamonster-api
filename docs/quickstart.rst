@@ -60,7 +60,7 @@ Getting data:
         apple = dm.get_company_by_ticker('aapl')
         datasource = next(apple.datasources)
 
-        # Gets all data for the datasource filtering on apple
+        # Gets all data for the data source filtering on apple
         datasource.get_data(apple)
 
         agg = Aggregation(period='fiscalQuarter', company=apple)

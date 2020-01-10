@@ -2,6 +2,10 @@
 
 .. automodule:: datamonster_api
 
+.. |br| raw:: html
+
+    <br/>
+
 This part of the documentation covers all the interfaces of the datamonster-api.
 
 Interface
