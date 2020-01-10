@@ -186,7 +186,7 @@ These are all the supported filters:
 Get Dimensions for Datasource
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Assuming ``dm`` is a ``DataMonster`` object, and given this fake datasource and company:
+Assuming ``dm`` is a ``DataMonster`` object, and given this fake data source and company:
 
 .. code::
 
