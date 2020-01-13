@@ -7,7 +7,7 @@ import six
 from .aggregation import aggregation_sanity_check
 from .client import Client
 from .company import Company
-from .data_group import DataGroup
+from .data_group import DataGroup, DataGroupColumn
 from .datasource import Datasource
 from .errors import DataMonsterError
 from .utils import format_date
@@ -465,11 +465,11 @@ class DataMonster(object):
         dg = self.client.get(path)
 
     def _data_group_result_to_object(self, data_group):
-        print(data_group)
+        columns = [DataGroupColumn(**column) for column in data_group['columns']]
         dg_inst = DataGroup(
             data_group['_id'],
             data_group['name'],
-            data_group['columns'],
+            columns,
             self
         )
 
