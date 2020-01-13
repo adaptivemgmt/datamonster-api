@@ -3,7 +3,8 @@ import pandas
 import pytest
 from six.moves.urllib.parse import urlparse, parse_qs
 
-from datamonster_api import Aggregation, DataMonsterError, DataMonster
+from datamonster_api import Aggregation, DataMonsterError, DataMonster, DataGroupColumn
+from test_data_group import assert_object_matches_data_group
 
 
 def _assert_object_matches_datasource(datasource, datasource_obj):
@@ -362,4 +363,41 @@ def test_get_data_group_by_id(mocker, dm, data_group_details_result):
 
     # Make sure we hit the right endpoint
     assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == '/rest/v1/'
+    assert dm.client.get.call_args[0][0] == '/rest/v1/data_group/123'
+
+    # a couple of spot checks.
+    assert data_group.name == 'Test By Id'
+    assert data_group.id == 123
+    assert len(data_group.columns) == 7
+    for c in data_group.columns:
+        assert isinstance(c, DataGroupColumn)
+
+
+def test_get_data_groups(mocker, dm, single_page_data_group_results):
+    """Test getting datagroups."""
+
+    def assert_results_good(results):
+        results = list(results)
+        assert len(results) == 2
+
+        assert_object_matches_data_group(results[0], single_page_data_group_results["results"][0])
+
+        assert_object_matches_data_group(results[1], single_page_data_group_results["results"][1])
+
+    dm.client.get = mocker.Mock(return_value=single_page_data_group_results)
+
+    # ++ No query
+    dm.client.get.reset_mock()
+    data_groups = dm.get_data_groups()
+
+    assert_results_good(data_groups)
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/data_group"
+
+    # ++ text query
+    dm.client.get.reset_mock()
+    data_groups = dm.get_data_groups(query="test")
+
+    assert_results_good(data_groups)
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == "/rest/v1/data_group?q=test"

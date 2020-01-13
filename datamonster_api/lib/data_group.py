@@ -35,7 +35,8 @@ class DataGroup(BaseClass):
         """
         return self.dm.get_data_group_details(self.id)
 
-    def _get_dgctype_(self, column):
+    @staticmethod
+    def _get_dgctype_(column):
         if hasattr(column, 'str') and column.str.match(date_regex).any():
             return 'date'
         elif np.issubdtype(column, np.number):
@@ -43,7 +44,8 @@ class DataGroup(BaseClass):
         else:
             return 'string'
 
-    def _construct_error_message(self, missing, extras, bad_dates):
+    @staticmethod
+    def _construct_error_message(missing, extras, bad_dates):
         msg = 'Invalid DataFrame Schema:\n'
         if missing:
             msg = msg + '  DataGroup could not find the following column{}:\n'.format(
@@ -94,7 +96,7 @@ class DataGroup(BaseClass):
             raise DataMonsterError(self._construct_error_message(missing, extra, bad_dates))
 
 
-class DataGroupColumn(BaseClass):
+class DataGroupColumn(object):
     """Representation of a DataGroupColumn in DataMonster
 
     :param name: (str) name of the DataGroupColumn
@@ -105,6 +107,9 @@ class DataGroupColumn(BaseClass):
 
         self.name = name
         self.type_ = type_
+
+    def __repr__(self):
+        return "<{}: {}>".format(self.__class__.__name__, self.name)
 
     def _exists_in_df(self, df):
         """Return true if this DataGroupColumn is represented in ``df``
