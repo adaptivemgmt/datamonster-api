@@ -452,7 +452,7 @@ class DataMonster(object):
         datagroups = self._get_paginated_results(url)
         return six.moves.map(self._data_group_result_to_object, datagroups)
 
-    def get_data_group_by_id(self, id):
+    def get_data_group_details(self, id):
         """Given a data group id, return the corresponding ``DataGroup`` object
 
         :param id: (int)
@@ -462,9 +462,13 @@ class DataMonster(object):
         :raises: ``DataMonsterError`` if no data group matches the given id
         """
         path = self._get_data_group_path(id)
-        dg = self.client.get(path)
+        return self.client.get(path)
 
-    def _data_group_result_to_object(self, data_group):
+    def get_data_group_by_id(self, id):
+        dg = self.get_data_group_details(id)
+        return self._data_group_result_to_object(dg, has_details=True)
+
+    def _data_group_result_to_object(self, data_group, has_details=False):
         columns = [DataGroupColumn(**column) for column in data_group['columns']]
         dg_inst = DataGroup(
             data_group['_id'],
@@ -472,6 +476,9 @@ class DataMonster(object):
             columns,
             self
         )
+
+        if has_details:
+            dg_inst.set_details(data_group)
 
         return dg_inst
 
