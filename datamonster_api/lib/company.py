@@ -41,7 +41,7 @@ class Company(BaseClass):
     @property
     def pk(self):
         """
-        :return: (int) the unique internal identifier for the company
+        :return: (int) the unique internal identifier for the company (corresponds to ``_id``)
         """
         return int(self.id)
 

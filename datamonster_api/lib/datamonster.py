@@ -123,9 +123,10 @@ class DataMonster(object):
         """Get details for the given company
 
         :param company_id: (str or int) unique internal identifier for company.
-                           See `this method <api.html#datamonster_api.DataMonster.get_company_by_id>`__
-                           for more info on company_id
-        :return: (dict) details (metadata) for this company, providing basic information as stored in DataMonster
+                           See the method |br|
+                           `get_company_by_id <api.html#datamonster_api.DataMonster.get_company_by_id>`__
+                           for more info on ``company_id``.
+        :return: (dict) details (metadata) for this company, providing basic information.
         """
         path = self._get_company_path(company_id)
         return self.client.get(path)
@@ -186,7 +187,10 @@ class DataMonster(object):
         )
 
     def get_datasource_by_id(self, datasource_id):
-        """Given a data source uuid, return the corresponding ``Datasource`` object
+        """Given a data source UUID (universal unique identifier),
+        return the corresponding ``Datasource`` object.
+        To find the UUID for a data source, first find it by name, then call ``.id``
+        on the resulting ``Datasource`` object.
 
         :param datasource_id: (str)
 
@@ -199,12 +203,15 @@ class DataMonster(object):
         return self._datasource_result_to_object(datasource, has_details=True)
 
     def get_datasource_details(self, datasource_id):
-        """Get details (metadata) for the data source corresponding to the given id
+        """Get details (metadata) for the data source corresponding to the given UUID
 
-        :param datasource_id: (str)
+        :param datasource_id: (str) See the method |br|
+                           `get_datasource_by_id
+                           <api.html#datamonster_api.DataMonster.get_datasource_by_id>`__
+                           for more info on ``datasource_id``
 
         :return: (dict) details (metadata) for this data source,
-            providing basic information as stored in DataMonster
+            providing basic information.
         """
         path = self._get_datasource_path(datasource_id)
         return self.client.get(path)
