@@ -382,3 +382,22 @@ def multi_page_dimensions_results():
 def large_filter_dict():
     N = 500000000  # 500_000_000
     return {str(i): i for i in range(N)}
+
+
+@pytest.fixture
+def data_group_details_result():
+    """As returned by DM `GET`
+    """
+    return {
+        '_id': 123,
+        'columns': [
+            {'_type': 'date', 'name': 'end date'},
+            {'_type': 'date', 'name': 'Start Date'},
+            {'_type': 'string', 'name': 'Ticker'},
+            {'_type': 'string', 'name': 'Split2'},
+            {'_type': 'string', 'name': 'Split 1'},
+            {'_type': 'number', 'name': 'dummy data 1'},
+            {'_type': 'number', 'name': 'dummy data 2'}
+            ],
+        'name': 'Test By Id'
+    }

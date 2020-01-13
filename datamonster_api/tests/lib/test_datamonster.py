@@ -351,3 +351,15 @@ def test_get_data_4(
     assert query["section_pk"] == [company.id]
     assert query["period_start__gte"] == ["2000-01-01"]
     assert query["period_end__lt"] == ["2001-01-01"]
+
+
+def test_get_data_group_by_id(mocker, dm, data_group_details_result):
+    """Test getting data group by pk"""
+
+    dm.client.get = mocker.Mock(return_value=data_group_details_result)
+
+    data_group = dm.get_data_group_by_id(123)
+
+    # Make sure we hit the right endpoint
+    assert dm.client.get.call_count == 1
+    assert dm.client.get.call_args[0][0] == '/rest/v1/'

@@ -472,6 +472,18 @@ class DataMonster(object):
         return self.client.get(path)
 
     def get_data_group_by_id(self, id):
+        """Give a data group pk (primary key),
+        return the corresponding ``DataGroup`` object.
+        To find the pk for a data group, first find it using
+        the iterator returned by ``get_data_groups()``, then
+        call ``.id`` on the ``DataGroup`` object.
+
+        :param id: (int)
+
+        :return: Single ``DataGroup`` object with the given id
+
+        :raises: ``DataMonsterError`` if no data group matches the given id
+        """
         dg = self.get_data_group_details(id)
         return self._data_group_result_to_object(dg, has_details=True)
 
