@@ -41,7 +41,7 @@ class DataGroup(BaseClass):
             return 'date'
         elif np.issubdtype(column, np.number):
             return 'number'
-        else:
+        elif np.issubdtype(column, np.object_) or np.issubdtype(column, np.str_):
             return 'string'
 
     @staticmethod
@@ -92,7 +92,11 @@ class DataGroup(BaseClass):
             if not hasattr(df[column.name], 'str') or not df[column.name].str.match(date_regex).all():
                 bad_dates.append(column)
 
-        if missing or extra or bad_dates:
+        return missing, extra, bad_dates
+
+    def _accepts(self, df):
+        missing, extra, bad_dates = self._validate_schema(df)
+        if missing or bad_dates:
             raise DataMonsterError(self._construct_error_message(missing, extra, bad_dates))
 
 
@@ -121,7 +125,8 @@ class DataGroupColumn(object):
         if self.name in df.columns:
             column = df[self.name]
             if self.type_ == 'string':
-                return True
+                # pandas maps strings to objects
+                return np.issubdtype(column, np.object_) or np.issubdtype(column, np.str_)
             elif self.type_ == 'number':
                 return np.issubdtype(column, np.number)
             elif self.type_ == 'date':

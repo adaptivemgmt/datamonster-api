@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from datamonster_api import DataMonster, Company, Datasource
+from datamonster_api import DataMonster, Company, Datasource, DataGroup, DataGroupColumn
 
 
 @pytest.fixture
@@ -431,3 +431,17 @@ def single_page_data_group_results():
             },
         ],
     }
+
+
+@pytest.fixture
+def data_group():
+    return DataGroup(
+        1,
+        'data group name',
+        [
+            DataGroupColumn('date col', 'date'),
+            DataGroupColumn('number col', 'number'),
+            DataGroupColumn('string col', 'string')
+        ],
+        None
+    )
