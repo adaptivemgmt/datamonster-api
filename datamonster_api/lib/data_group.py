@@ -46,37 +46,33 @@ class DataGroup(BaseClass):
 
     @staticmethod
     def _construct_error_message(missing, extras, bad_dates):
-        msg = 'Invalid DataFrame Schema:\n'
+        msg = ['Invalid DataFrame Schema:']
         if missing:
-            msg = msg + '  DataGroup could not find the following column{}:\n'.format(
+            msg.append('  DataGroup could not find the following column{}:'.format(
                 's' if len(missing) > 1 else ''
-            )
+            ))
             for miss in missing:
-                msg = msg + '    name: "{}", type: {}\n'.format(miss.name, miss.type_)
+                msg.append('    name: "{}", type: {}'.format(miss.name, miss.type_))
         if extras:
-            msg = msg + '  DataGroup was not expecting the following column{}:\n'.format(
+            msg.append('  DataGroup was not expecting the following column{}:'.format(
                 's' if len(extras) > 1 else ''
-            )
+            ))
             for extra in extras:
-                msg = msg + '    name: "{}", type: {}\n'.format(extra.name, extra.type_)
+                msg.append('    name: "{}", type: {}'.format(extra.name, extra.type_))
         if bad_dates:
-            msg = msg + '  The following column{} expected to contain only YYYY-MM-DD dates but did not:\n'.format(
+            msg.append('  The following column{} expected to contain only YYYY-MM-DD dates but did not:'.format(
                 's were' if len(bad_dates) > 1 else ' was'
-            )
+            ))
             for bad_date in bad_dates:
-                msg = msg + '    name: "{}", type: {}\n'.format(bad_date.name, bad_date.type_)
-        return msg
+                msg.append('    name: "{}", type: {}\n'.format(bad_date.name, bad_date.type_))
+        return '\n'.join(msg)
 
     def _validate_schema(self, df):
         """Check if the schema of a provided pandas dataframe matches the expected columns"""
-        missing = []
         extra = []
-        bad_dates = []
 
         # Find missing columns
-        for col in self.columns:
-            if not col._exists_in_df(df):
-                missing.append(col)
+        missing = [col for col in self.columns if not col._exists_in_df(df)]
 
         # Find extra columns
         if len(df.columns) + len(missing) != len(self.columns):
@@ -88,13 +84,14 @@ class DataGroup(BaseClass):
 
         # Verify date columns are complete
         date_columns = [col for col in self.columns if col.type_ == 'date' and col not in missing]
-        for column in date_columns:
-            if not hasattr(df[column.name], 'str') or not df[column.name].str.match(date_regex).all():
-                bad_dates.append(column)
+        bad_dates = [column for column in date_columns if
+                     not hasattr(df[column.name], 'str') or
+                     not df[column.name].str.match(date_regex).all()]
 
         return missing, extra, bad_dates
 
     def _accepts(self, df):
+        """Check if DataGroup could run a refresh with the given data frame"""
         missing, extra, bad_dates = self._validate_schema(df)
         if missing or bad_dates:
             raise DataMonsterError(self._construct_error_message(missing, extra, bad_dates))
@@ -131,3 +128,5 @@ class DataGroupColumn(object):
                 return np.issubdtype(column, np.number)
             elif self.type_ == 'date':
                 return column.str.match(date_regex).any()
+            else:
+                raise DataMonsterError('Unrecognized column type of column {}'.format(self.name))
