@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 from datamonster_api import DataGroupColumn
 
@@ -85,5 +84,3 @@ def test_bad_number_or_string_type_counted_as_missing_and_extra(data_group):
     assert (str(missing[0]) == str(DataGroupColumn('string col', 'string')))
     assert (len(extra) == 1)
     assert (str(extra[0]) == str(DataGroupColumn('string col', 'number')))
-
-
