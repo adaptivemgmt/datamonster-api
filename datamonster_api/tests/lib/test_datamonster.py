@@ -144,22 +144,89 @@ def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     assert dm.client.get.call_count == 1
 
 
-def test_get_raw_data_1(
-    mocker, dm, avro_data_file, company, datasource, datasource_details_result
-):
-    """Test getting raw data -- happy case"""
+def test_get_data_raw_1(mocker, dm, avro_data_file, company, datasource, datasource_details_result):
+    """Test getting raw data -- calendar quarterly aggregation"""
+
     datasource.get_details = mocker.Mock(return_value=datasource_details_result)
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
 
-    schema, df = dm.get_raw_data(datasource, section_pk=company.id)
+    filters = {
+        'category': ['Apple iTunes'],
+        'country': ['US'],
+        'section_pk': [company.id]
+    }
 
-    # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/rawdata?section_pk={}".format(
-        datasource.id, company.id
-    )
-    assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == expected_path
-    assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
+    # Expected values for network calls
+    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': {
+            'cadence': 'fiscal quarterly',
+            'aggregationType': 'sum',
+            'includePTD': False
+        },
+        'valueAggregation': None,
+        'filters': filters,
+        'forecast': False
+    }
+
+    agg = Aggregation(period='fiscalQuarter', company=company)
+    schema, df = dm.get_data_raw(datasource, aggregation=agg, filters=filters)
+
+    assert dm.client.post.call_count == 1
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_args[0][2] == expected_post_data
+
+    assert len(df.columns) == 5
+    assert sorted(df.columns) == [
+        "avg_dollar_per_cust",
+        "category",
+        "country",
+        "period_end",
+        "period_start",
+    ]
+    assert len(df) == 8
+
+    assert df.iloc[0]["category"] == "Amazon ex. Whole Foods"
+    assert df.iloc[0]["country"] == "US"
+    assert df.iloc[0]["avg_dollar_per_cust"] == 38.5165896068141
+    assert df.iloc[0]["period_start"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[0]["period_end"].date() == datetime.date(2019, 1, 3)
+
+    assert df.iloc[7]["category"] == "Amazon Acquisition Adjusted"
+    assert df.iloc[7]["country"] == "US"
+    assert df.iloc[7]["avg_dollar_per_cust"] == 40.692421507668499
+    assert df.iloc[7]["period_start"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[7]["period_end"].date() == datetime.date(2019, 1, 3)
+
+
+def test_get_data_raw_2(mocker, dm, avro_data_file, company, datasource, datasource_details_result):
+    """Test getting raw data -- no aggregation"""
+
+    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
+
+    filters = {
+        'category': ['Apple iTunes'],
+        'country': ['US'],
+        'section_pk': [company.id]
+    }
+
+    # Expected values for network calls
+    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': None,
+        'valueAggregation': None,
+        'filters': filters,
+        'forecast': False
+    }
+
+    schema, df = dm.get_data_raw(datasource, filters)
+
+    assert dm.client.post.call_count == 1
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_args[0][2] == expected_post_data
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
@@ -189,17 +256,24 @@ def test_get_data_1(
 ):
     """Test getting data -- happy case"""
     datasource.get_details = mocker.Mock(return_value=datasource_details_result)
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
+
+    # Expected values
+    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': None,
+        'valueAggregation': None,
+        'filters': {'section_pk': [company.id]},
+        'forecast': False
+    }
 
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/rawdata?section_pk={}".format(
-        datasource.id, company.id
-    )
-    assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == expected_path
-    assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_count == 1
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == expected_post_data
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary"}
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
