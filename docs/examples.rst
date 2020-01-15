@@ -1,7 +1,7 @@
 Examples
 --------
 
-Get Raw Data
+Get Data Raw
 ^^^^^^^^^^^^
 
 Initialize a ``DataMonster`` object:
