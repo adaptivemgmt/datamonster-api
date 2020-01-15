@@ -235,6 +235,15 @@ def avro_data_file(datadir):
         return MockResponse(fp.read())
 
 
+@pytest.fixture
+def other_avro_data_file(datadir):
+    class MockResponse(object):
+        def __init__(self, content):
+            self.content = content
+
+    with open(os.path.join(datadir, "other_avro_data_file"), "rb") as fp:
+        return MockResponse(fp.read())
+
 # ------------------------
 # dimensions fixtures
 # ------------------------

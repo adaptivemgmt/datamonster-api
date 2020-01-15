@@ -259,7 +259,7 @@ class DataMonster(object):
             if not datasource.lowerDateField:
                 raise DataMonsterError("This data source does not support date queries")
 
-        if aggregation is not None and aggregation.company != company:
+        if aggregation is not None and aggregation.period == 'fiscalQuarter' and aggregation.company != company:
             raise DataMonsterError("Aggregating by the fiscal quarter of a different company not yet supported")
 
         schema, df = self.get_data_raw(datasource, filters, aggregation)
@@ -269,13 +269,17 @@ class DataMonster(object):
                 self.DATAMONSTER_SCHEMA_FIELDS, schema, df
             )
 
+        # Trim the dates on the client side. This would be more efficient on the server, but we don't support
+        # greater than or less than right now
+        if start_date is not None and 'end_date' in df:
+            df = df[df.end_date >= pandas.Timestamp(start_date)]
+
+        if end_date is not None and 'start_date' in df:
+            df = df[df.start_date <= pandas.Timestamp(end_date)]
+
         if "end_date" in df:
             df.sort_values(by="end_date", inplace=True)
         return df
-
-    def get_raw_data(self, *args, **kwargs):
-        """This function is deprecated. Please use the get_data_raw function instead"""
-        raise DataMonsterError("This function has been deprecated. Please use get_data_raw")
 
     def get_data_raw(self, datasource, filters=None, aggregation=None):
         """Get raw data for all companies available in the data source.
@@ -305,6 +309,10 @@ class DataMonster(object):
         url = self.rawdata_path.format(self._get_datasource_path(datasource.id))
         resp = self.client.post(url, post_data, headers, stream=True)
         return self._avro_to_df(resp.content, datasource.fields)
+
+    def get_raw_data(self, *args, **kwargs):
+        """This function is deprecated. Please use the get_data_raw function instead"""
+        raise DataMonsterError("This function has been deprecated. Please use get_data_raw")
 
     def _avro_to_df(self, avro_buffer, data_types):
         """Read an avro structure into a dataframe and minimially parse it
