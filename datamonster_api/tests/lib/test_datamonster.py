@@ -161,7 +161,8 @@ def test_get_data_raw_1(mocker, dm, avro_data_file, company, datasource, datasou
         'timeAggregation': {
             'cadence': 'fiscal quarterly',
             'aggregationType': 'sum',
-            'includePTD': False
+            'includePTD': False,
+            'section_pk': company.id,
         },
         'valueAggregation': None,
         'filters': filters,
@@ -354,7 +355,8 @@ def test_get_data_3(
         'timeAggregation': {
             'cadence': 'fiscal quarterly',
             'aggregationType': 'sum',
-            'includePTD': False
+            'includePTD': False,
+            'section_pk': company.id,
         },
         'valueAggregation': None,
         'filters': {'section_pk': [company.id]},
