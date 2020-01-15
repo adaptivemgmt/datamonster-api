@@ -97,7 +97,7 @@ class Client(object):
 
         return self._format_response(response)
 
-    def post(self, path, data, headers=None, stream=False):
+    def post(self, path, json, headers=None, stream=False):
         """
         :param path: (six.text_type) url path
         :param data: (dict) post data
@@ -111,6 +111,6 @@ class Client(object):
         session = self._get_session('POST', path, headers)
 
         url = "{}{}".format(self.server, path)
-        response = session.post(url, data=data, verify=self.verify, stream=stream)
+        response = session.post(url, json=json, verify=self.verify, stream=stream)
 
         return self._format_response(response)

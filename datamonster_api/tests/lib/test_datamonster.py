@@ -156,7 +156,7 @@ def test_get_data_raw_1(mocker, dm, avro_data_file, company, datasource, datasou
     }
 
     # Expected values for network calls
-    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
     expected_post_data = {
         'timeAggregation': {
             'cadence': 'fiscal quarterly',
@@ -174,7 +174,7 @@ def test_get_data_raw_1(mocker, dm, avro_data_file, company, datasource, datasou
     assert dm.client.post.call_count == 1
     assert dm.client.post.call_args[0][0] == expected_path
     assert dm.client.post.call_args[0][1] == expected_post_data
-    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary", 'Content-Type': 'application/json'}
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
@@ -212,7 +212,7 @@ def test_get_data_raw_2(mocker, dm, avro_data_file, company, datasource, datasou
     }
 
     # Expected values for network calls
-    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
     expected_post_data = {
         'timeAggregation': None,
         'valueAggregation': None,
@@ -225,7 +225,7 @@ def test_get_data_raw_2(mocker, dm, avro_data_file, company, datasource, datasou
     assert dm.client.post.call_count == 1
     assert dm.client.post.call_args[0][0] == expected_path
     assert dm.client.post.call_args[0][1] == expected_post_data
-    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary", 'Content-Type': 'application/json'}
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
@@ -258,7 +258,7 @@ def test_get_data_1(
     dm.client.post = mocker.Mock(return_value=avro_data_file)
 
     # Expected values
-    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
     expected_post_data = {
         'timeAggregation': None,
         'valueAggregation': None,
@@ -272,7 +272,7 @@ def test_get_data_1(
     assert dm.client.post.call_count == 1
     assert dm.client.post.call_args[0][0] == expected_path
     assert dm.client.post.call_args[0][1] == expected_post_data
-    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary", 'Content-Type': 'application/json'}
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
@@ -331,7 +331,7 @@ def test_get_data_3(
     agg = Aggregation(period="month", company=None)
 
     # Expected values
-    expected_path = "/rest/v1/datasource/{}/rawdata".format(datasource.id)
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
     expected_post_data = {
         'timeAggregation': {
             'cadence': 'monthly',
@@ -376,15 +376,15 @@ def test_get_data_4(mocker, dm, other_avro_data_file, company, datasource, datas
     # ** start date
     df = dm.get_data(datasource, company, start_date=datetime.date(2019, 12, 30))
 
-    assert len(df) == 2
-    assert df.iloc[0].start_date.date() == datetime.date(2019, 12, 30)
-    assert df.iloc[1].start_date.date() == datetime.date(2019, 12, 31)
+    assert len(df) == 3
+    assert df.iloc[0].start_date.date() == datetime.date(2019, 12, 29)
+    assert df.iloc[1].start_date.date() == datetime.date(2019, 12, 30)
+    assert df.iloc[2].start_date.date() == datetime.date(2019, 12, 31)
 
     # ** end date
     df = dm.get_data(datasource, company, end_date=datetime.date(2014, 1, 2))
-    assert len(df) == 2
+    assert len(df) == 1
     assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 1)
-    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 2)
 
     # ** start and end date
 
@@ -396,5 +396,5 @@ def test_get_data_4(mocker, dm, other_avro_data_file, company, datasource, datas
     )
 
     assert len(df) == 2
-    assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 15)
-    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 16)
+    assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 14)
+    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 15)

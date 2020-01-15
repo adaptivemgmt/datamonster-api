@@ -24,7 +24,7 @@ class DataMonster(object):
     company_path = "/rest/v1/company"
     datasource_path = "/rest/v1/datasource"
     dimensions_path = "/rest/v1/datasource/{}/dimensions"
-    rawdata_path = "{}/rawdata"
+    rawdata_path = "/rest/v2/datasource/{}/rawdata"
 
     DATAMONSTER_SCHEMA_FIELDS = {
         "lower_date": "start_date",
@@ -272,10 +272,12 @@ class DataMonster(object):
         # Trim the dates on the client side. This would be more efficient on the server, but we don't support
         # greater than or less than right now
         if start_date is not None and 'end_date' in df:
-            df = df[df.end_date >= pandas.Timestamp(start_date)]
+            # This is pretty fudgy, but it matches the way things currently work
+            test_date = pandas.Timestamp(start_date - datetime.timedelta(days=1))
+            df = df[df.end_date >= pandas.Timestamp(test_date)]
 
         if end_date is not None and 'start_date' in df:
-            df = df[df.start_date <= pandas.Timestamp(end_date)]
+            df = df[df.start_date < pandas.Timestamp(end_date)]
 
         if "end_date" in df:
             df.sort_values(by="end_date", inplace=True)
@@ -305,8 +307,8 @@ class DataMonster(object):
                 datasource.aggregationType
             )
 
-        headers = {"Accept": "avro/binary"}
-        url = self.rawdata_path.format(self._get_datasource_path(datasource.id))
+        headers = {"Accept": "avro/binary", 'Content-Type': 'application/json'}
+        url = self.rawdata_path.format(datasource.id)
         resp = self.client.post(url, post_data, headers, stream=True)
         return self._avro_to_df(resp.content, datasource.fields)
 
