@@ -27,11 +27,15 @@ class Aggregation(object):
 
     def to_time_aggregation_dictionary(self, aggregation_type='sum'):
         """Used to extract the time aggregation dictionary for API usage from the Aggregation"""
-        return {
+        agg_dict = {
             'cadence': self.aggregation_period_map[self.period],
             'aggregationType': aggregation_type,
             'includePTD': False
         }
+        if self.period == 'fiscalQuarter':
+            agg_dict['section_pk'] = self.company.id
+
+        return agg_dict
 
     def aggregation_sanity_check(self, company=None):
         if self.period is not None and self.period not in self.aggregation_period_map:

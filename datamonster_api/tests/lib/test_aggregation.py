@@ -26,3 +26,56 @@ def test_bad_aggregations():
         "Company must be specified for a fiscalQuarter aggregation"
         in excinfo.value.args[0]
     )
+
+
+def test_to_time_aggregation_dictionary_1():
+    """Test time aggregation dictionary -- no company"""
+
+    # no agg type specified
+    expected = {
+        'cadence': 'monthly',
+        'aggregationType': 'sum',
+        'includePTD': False
+    }
+
+    agg = Aggregation(period="month", company=None)
+    agg_dict = agg.to_time_aggregation_dictionary()
+    assert agg_dict == expected
+
+    # agg type specified
+    expected = {
+        'cadence': 'monthly',
+        'aggregationType': 'mean',
+        'includePTD': False
+    }
+
+    agg = Aggregation(period="month", company=None)
+    agg_dict = agg.to_time_aggregation_dictionary('mean')
+    assert agg_dict == expected
+
+
+def test_to_time_aggregation_dictionary_2(company):
+    """Test time aggregation dictionary -- include company"""
+
+    # cadence is monthly
+    expected = {
+        'cadence': 'monthly',
+        'aggregationType': 'sum',
+        'includePTD': False
+    }
+
+    agg = Aggregation(period="month", company=company)
+    agg_dict = agg.to_time_aggregation_dictionary()
+    assert agg_dict == expected
+
+    # cadence is fiscal quarterly
+    expected = {
+        'cadence': 'fiscal quarterly',
+        'aggregationType': 'sum',
+        'includePTD': False,
+        'section_pk': company.id
+    }
+
+    agg = Aggregation(period="fiscalQuarter", company=company)
+    agg_dict = agg.to_time_aggregation_dictionary()
+    assert agg_dict == expected
