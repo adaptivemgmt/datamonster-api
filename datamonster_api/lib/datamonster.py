@@ -294,14 +294,14 @@ class DataMonster(object):
 
         See `here <examples.html#get-data-raw>`__ for example usage.
         """
-
         post_data = {
-            'filters': filters,
             'forecast': False,
             'valueAggregation': None,
             'timeAggregation': None,
         }
 
+        if filters is not None:
+            post_data['filters'] = filters
         if aggregation is not None:
             post_data['timeAggregation'] = aggregation.to_time_aggregation_dictionary(
                 datasource.aggregationType
