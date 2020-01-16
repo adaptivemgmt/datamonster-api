@@ -1,7 +1,7 @@
 Examples
 --------
 
-Get Raw Data
+Get Data Raw
 ^^^^^^^^^^^^
 
 Initialize a ``DataMonster`` object:
@@ -22,7 +22,7 @@ Get raw data from the data source, producing a schema and pandas dataframe:
 
 ..  code::
 
-    schema, df = dm.get_raw_data(ds)
+    schema, df = dm.get_data_raw(ds)
 
 The schema will contain metadata for the data source, with keys and values showing the roles different columns play in the data.
 In the case of the above data source:
@@ -65,6 +65,16 @@ Next, looking at the dataframe we see:
      - 2018-07-02
      - 2018-04-02
      - 742
+   * - Category1
+     - -0.2233
+     - 2018-07-02
+     - 2018-04-02
+     - 742
+   * - Category1
+     - -0.4132
+     - 2019-03-31
+     - 2019-01-01
+     - 205
 
 Note that the ``section_pk`` column, which represents which company each data point refers to, is currently in the form of
 an internal DataMonster identifier and is not particularly useful for external use. To convert to a more usable form, try:
@@ -121,67 +131,121 @@ We can now use ``map_pk_to_ticker_and_name`` to produce a more human-readable da
      - 2018-04-02
      - RUTH
      - RUTH'S HOSPITALITY GROUP
+   * - Category1
+     - -0.2233
+     - 2018-07-02
+     - 2018-04-02
+     - RUTH
+     - RUTH'S HOSPITALITY GROUP
+   * - Category1
+     - -0.4132
+     - 2019-03-31
+     - 2019-01-01
+     - HD
+     - HOME DEPOT
 
-Finally, we can use keyword arguments with double underscores that will be passed to the REST API
-to constrain the returned data. For example:
+Filtering to Specific Dimensions
+""""""""""""""""""""""""""""""""
 
-..  code::
+The raw data endpoint supports filtering to specific values for dimensions by applying key value pairs as a dictionary,
+where the key is the dimension name and the value is a list of possibilities for that dimension. Using the example
+above, we could do this in a variety of ways.
 
-    dated_schema, dated_df = dm.get_raw_data(
-        ds, period_start__gte="2018-01-01"
-    )
-
-Will give all rows from the data source dated on or after 01/01/2018. Similarly:
-
-..  code::
-
-    dated_schema, dated_df = dm.get_raw_data(
-        ds, period_end__lt="2018-01-01"
-    )
-
-Will return all rows from the data source dated entirely before 01/01/2018.
-Lastly, we can use a workaround to get all data where category is specified:
+Filtering to specific companies (in this case, Party City and Home Depot):
 
 .. code::
 
-    filtered_df1 = dm.get_raw_data(
-        ds, category__lt = "Not Specified"
-        )[1]
+    >>> filters = {'section_pk': [617, 205]}
+    >>> schema, df = dm.get_data_raw(ds, filters=filters)
 
-    filtered_df2 = dm.get_raw_data(
-        ds, category__gt = "Not Specified"
-        )[1]
+.. list-table::
+   :header-rows: 1
 
-    pd.concat([filtered_df1, filtered_df2]).head()
+   * - category
+     - panel_sales
+     - period_end
+     - period_start
+     - section_pk
+   * - Not specified
+     - -0.1139
+     - 2017-01-01
+     - 2016-10-02
+     - 617
+   * - Category1
+     - -0.4132
+     - 2019-03-31
+     - 2019-01-01
+     - 205
 
-This trick is necessary as the REST API does not currently allow for excluding strings.
+Filtering to specific dimension values (in this case, ``"Category1"``):
 
-More generally, to use a filter, pass ``<column>__<filter> = <filter criterium>`` as a keyword
-argument into ``get_raw_data`` (note the double underscore).
-These are all the supported filters:
+..  code::
 
-- exact
-- iexact
-- contains
-- icontains
-- in
-- gt
-- gte
-- lt
-- lte
-- startswith
-- istartswith
-- endswith
-- iendswith
-- range
-- year
-- month
-- day
-- week_day
-- isnull
-- search
-- regex
-- iregex
+    >>> filters = {'category': ['Category1']}
+    >>> schema, df = dm.get_data_raw(ds, filters=filters)
+
+.. list-table::
+   :header-rows: 1
+
+   * - category
+     - panel_sales
+     - period_end
+     - period_start
+     - section_pk
+   * - Category1
+     - -0.2233
+     - 2018-07-02
+     - 2018-04-02
+     - 742
+   * - Category1
+     - -0.4132
+     - 2019-03-31
+     - 2019-01-01
+     - 205
+
+Combining filters across dimensions (in this case, ``"Category1"`` for Ruth's Hospitality Group):
+
+..  code::
+
+    >>> filters = {'section_pk': [742], 'category': ['Category1']}
+    >>> schema, df = dm.get_data_raw(ds, filters=filters)
+
+.. list-table::
+   :header-rows: 1
+
+   * - category
+     - panel_sales
+     - period_end
+     - period_start
+     - section_pk
+   * - Category1
+     - -0.2233
+     - 2018-07-02
+     - 2018-04-02
+     - 742
+
+Aggregating Results on Different Cadences
+"""""""""""""""""""""""""""""""""""""""""
+
+The raw data endpoint can also take an optional ``Aggregation`` object to request data with a time-based aggregation applied.
+For example:
+
+.. code::
+
+    from datamonster_api import DataMonster, Aggregation
+
+    dm = DataMonster(<key_id>, <secret_key>)
+
+    # Get Company for Home Depot
+    hd = dm.get_company_by_ticker('hd')
+
+    # Get our Data Source
+    ds = dm.get_datasource_by_name('XYZ Data Source')
+
+    # Filter to Home Depot data and aggregate by Home Depot's fiscal quarters
+    filters = {'section_pk': [hd.pk]}
+    agg = Aggregation(period='fiscalQuarter', company=hd)
+    dm.get_data_raw(ds, filters=filters, aggregation=agg)
 
 Get Dimensions for Datasource
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

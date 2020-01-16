@@ -39,7 +39,7 @@ def python_environment(
         os.makedirs(base_dir)
 
     with lcd(base_dir):
-        local("python3 -m venv {}".format(path_to_virtual_env))
+        local("python3.8 -m venv --upgrade {}".format(path_to_virtual_env))
         local("{}/pip3 install --upgrade pip".format(bin_dir))
         local("{}/pip3 install -r {}".format(bin_dir, path_to_requirements))
         print("path_to_virtual_env: {}".format(path_to_virtual_env))

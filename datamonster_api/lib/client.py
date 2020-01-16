@@ -27,7 +27,7 @@ class Client(object):
             secret_binary, msg_to_hash.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
-    def get(self, path, headers=None, stream=False):
+    def _get_session(self, method, path, headers=None):
         """
         :param path: (six.text_type) url path
         :param headers: (dict or None) Additional optional header items
@@ -41,7 +41,6 @@ class Client(object):
 
         date = datetime.datetime.utcnow()
         date_str = date.strftime("%a, %d %b %Y %H:%M:%S") + " +0000"
-        method = "GET"
 
         # Probably should fix this on the server to keep the get params in the hash
         hash_path = path.split("?")[0]
@@ -58,23 +57,63 @@ class Client(object):
         session.headers.update(headers)
 
         retry = requests.packages.urllib3.util.retry.Retry(
-            total=3, backoff_factor=5, status_forcelist=(500, 502, 504)
+            total=3,
+            backoff_factor=5,
+            status_forcelist=(500, 502, 504),
+            method_whitelist=frozenset(["GET", "POST"]),
         )
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
-        url = "{}{}".format(self.server, path)
-        resp = session.get(url, verify=self.verify, stream=stream)
+        return session
 
-        if resp.status_code != 200:
-            raise DataMonsterError(resp.reason, resp.content)
+    def _format_response(self, response):
+        """Format the response from a rest call"""
 
-        if resp.headers["Content-Type"] == "application/json":
-            return resp.json()
-        elif resp.headers["Content-Type"] == "avro/binary":
-            return resp
+        if response.status_code != 200:
+            raise DataMonsterError(response.reason, response.content)
+
+        if response.headers["Content-Type"] == "application/json":
+            return response.json()
+        elif response.headers["Content-Type"] == "avro/binary":
+            return response
         else:
             raise DataMonsterError(
-                "Unexpected content type: {}".format(resp.headers["Content-Type"])
+                "Unexpected content type: {}".format(response.headers["Content-Type"])
             )
+
+    def get(self, path, headers=None, stream=False):
+        """
+        :param path: (six.text_type) url path
+        :param headers: (dict or None) Additional optional header items
+
+        :return: the Response, appropriately formatted/deserialized
+        :raises: DataMonsterError, if requests `get` returns with status_code != 200,
+            or if content type of response is neither json nor avro
+        """
+
+        session = self._get_session("GET", path, headers)
+
+        url = "{}{}".format(self.server, path)
+        response = session.get(url, verify=self.verify, stream=stream)
+
+        return self._format_response(response)
+
+    def post(self, path, json, headers=None, stream=False):
+        """
+        :param path: (six.text_type) url path
+        :param data: (dict) post data
+        :param headers: (dict or None) Additional optional header items
+
+        :return: the Response, appropriately formatted/deserialized
+        :raises: DataMonsterError, if requests `get` returns with status_code != 200,
+            or if content type of response is neither json nor avro
+        """
+
+        session = self._get_session("POST", path, headers)
+
+        url = "{}{}".format(self.server, path)
+        response = session.post(url, json=json, verify=self.verify, stream=stream)
+
+        return self._format_response(response)

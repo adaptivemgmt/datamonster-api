@@ -1,7 +1,6 @@
 import datetime
 import pandas
 import pytest
-from six.moves.urllib.parse import urlparse, parse_qs
 
 from datamonster_api import Aggregation, DataMonsterError, DataMonster
 
@@ -144,22 +143,90 @@ def test_get_datasource_by_id(mocker, dm, datasource_details_result):
     assert dm.client.get.call_count == 1
 
 
-def test_get_raw_data_1(
-    mocker, dm, avro_data_file, company, datasource, datasource_details_result
-):
-    """Test getting raw data -- happy case"""
+def test_get_data_raw_1(mocker, dm, avro_data_file, company, datasource, datasource_details_result):
+    """Test getting raw data -- calendar quarterly aggregation"""
+
     datasource.get_details = mocker.Mock(return_value=datasource_details_result)
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
 
-    schema, df = dm.get_raw_data(datasource, section_pk=company.id)
+    filters = {
+        'category': ['Apple iTunes'],
+        'country': ['US'],
+        'section_pk': [company.id]
+    }
 
-    # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/rawdata?section_pk={}".format(
-        datasource.id, company.id
-    )
-    assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == expected_path
-    assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
+    # Expected values for network calls
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': {
+            'cadence': 'fiscal quarterly',
+            'aggregationType': 'sum',
+            'includePTD': False,
+            'sectionPk': company.id,
+        },
+        'valueAggregation': None,
+        'filters': filters,
+        'forecast': False
+    }
+
+    agg = Aggregation(period='fiscalQuarter', company=company)
+    schema, df = dm.get_data_raw(datasource, aggregation=agg, filters=filters)
+
+    assert dm.client.post.call_count == 1
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == expected_post_data
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary", 'Content-Type': 'application/json'}
+
+    assert len(df.columns) == 5
+    assert sorted(df.columns) == [
+        "avg_dollar_per_cust",
+        "category",
+        "country",
+        "period_end",
+        "period_start",
+    ]
+    assert len(df) == 8
+
+    assert df.iloc[0]["category"] == "Amazon ex. Whole Foods"
+    assert df.iloc[0]["country"] == "US"
+    assert df.iloc[0]["avg_dollar_per_cust"] == 38.5165896068141
+    assert df.iloc[0]["period_start"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[0]["period_end"].date() == datetime.date(2019, 1, 3)
+
+    assert df.iloc[7]["category"] == "Amazon Acquisition Adjusted"
+    assert df.iloc[7]["country"] == "US"
+    assert df.iloc[7]["avg_dollar_per_cust"] == 40.692421507668499
+    assert df.iloc[7]["period_start"].date() == datetime.date(2019, 1, 2)
+    assert df.iloc[7]["period_end"].date() == datetime.date(2019, 1, 3)
+
+
+def test_get_data_raw_2(mocker, dm, avro_data_file, company, datasource, datasource_details_result):
+    """Test getting raw data -- no aggregation"""
+
+    datasource.get_details = mocker.Mock(return_value=datasource_details_result)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
+
+    filters = {
+        'category': ['Apple iTunes'],
+        'country': ['US'],
+        'section_pk': [company.id]
+    }
+
+    # Expected values for network calls
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': None,
+        'valueAggregation': None,
+        'filters': filters,
+        'forecast': False
+    }
+
+    schema, df = dm.get_data_raw(datasource, filters)
+
+    assert dm.client.post.call_count == 1
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == expected_post_data
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary", 'Content-Type': 'application/json'}
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
@@ -189,17 +256,24 @@ def test_get_data_1(
 ):
     """Test getting data -- happy case"""
     datasource.get_details = mocker.Mock(return_value=datasource_details_result)
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
+
+    # Expected values
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': None,
+        'valueAggregation': None,
+        'filters': {'section_pk': [company.id]},
+        'forecast': False
+    }
 
     df = dm.get_data(datasource, company)
 
     # Check that we called the client correctly
-    expected_path = "/rest/v1/datasource/{}/rawdata?section_pk={}".format(
-        datasource.id, company.id
-    )
-    assert dm.client.get.call_count == 1
-    assert dm.client.get.call_args[0][0] == expected_path
-    assert dm.client.get.call_args[0][1] == {"Accept": "avro/binary"}
+    assert dm.client.post.call_count == 1
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == expected_post_data
+    assert dm.client.post.call_args[0][2] == {"Accept": "avro/binary", 'Content-Type': 'application/json'}
 
     assert len(df.columns) == 5
     assert sorted(df.columns) == [
@@ -228,30 +302,7 @@ def test_get_data_1(
 
 
 def test_get_data_2(mocker, dm, avro_data_file, company, other_company, datasource):
-    """Test getting data -- bad aggregations"""
-    # ** aggregation period is invalid
-    agg = Aggregation(period=123, company=None)
-    with pytest.raises(DataMonsterError) as excinfo:
-        dm.get_data(datasource, company, agg)
-
-    assert "Bad Aggregation Period" in excinfo.value.args[0]
-
-    # ** aggregation company is invalid
-    agg = Aggregation(period="month", company=123)
-    with pytest.raises(DataMonsterError) as excinfo:
-        dm.get_data(datasource, company, agg)
-
-    assert "Aggregation company must be Company" in excinfo.value.args[0]
-
-    # ** fiscal quarter aggregation -- no company
-    agg = Aggregation(period="fiscalQuarter", company=None)
-    with pytest.raises(DataMonsterError) as excinfo:
-        dm.get_data(datasource, company, agg)
-
-    assert (
-        "Company must be specified for a fiscalQuarter aggregation"
-        in excinfo.value.args[0]
-    )
+    """Test getting data -- bad aggregation"""
 
     # ** fiscal quarter aggregation -- different company
     agg = Aggregation(period="fiscalQuarter", company=other_company)
@@ -273,81 +324,79 @@ def test_get_data_3(
     datasource,
     datasource_details_result,
 ):
-    """Test getting data -- good aggregations"""
+    """Test getting data -- monthly aggregation"""
 
     # ** monthly aggregation
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
     datasource.get_details = mocker.Mock(return_value=datasource_details_result)
     agg = Aggregation(period="month", company=None)
 
+    # Expected values
+    expected_path = "/rest/v2/datasource/{}/rawdata".format(datasource.id)
+    expected_post_data = {
+        'timeAggregation': {
+            'cadence': 'monthly',
+            'aggregationType': 'sum',
+            'includePTD': False
+        },
+        'valueAggregation': None,
+        'filters': {'section_pk': [company.id]},
+        'forecast': False
+    }
+
     dm.get_data(datasource, company, agg)
-
-    url = urlparse(dm.client.get.call_args[0][0])
-    query = parse_qs(url.query)
-
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
-    assert len(query) == 2
-    assert query["aggregation"] == ["month"]
-    assert query["section_pk"] == [company.id]
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == expected_post_data
 
     # ** fiscal quarter aggregation -- good company
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=avro_data_file)
     agg = Aggregation(period="fiscalQuarter", company=company)
+    expected_post_data = {
+        'timeAggregation': {
+            'cadence': 'fiscal quarterly',
+            'aggregationType': 'sum',
+            'includePTD': False,
+            'sectionPk': company.id,
+        },
+        'valueAggregation': None,
+        'filters': {'section_pk': [company.id]},
+        'forecast': False
+    }
 
     dm.get_data(datasource, company, agg)
 
-    url = urlparse(dm.client.get.call_args[0][0])
-    query = parse_qs(url.query)
-
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
-    assert len(query) == 2
-    assert query["aggregation"] == ["fiscalQuarter"]
-    assert query["section_pk"] == [company.id]
+    assert dm.client.post.call_args[0][0] == expected_path
+    assert dm.client.post.call_args[0][1] == expected_post_data
 
 
-def test_get_data_4(
-    mocker,
-    dm,
-    avro_data_file,
-    company,
-    other_company,
-    datasource,
-    datasource_details_result,
-):
+def test_get_data_4(mocker, dm, other_avro_data_file, company, datasource, datasource_details_result):
     """Test getting data -- date filters"""
 
-    # ** monthly aggregation, start date
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
+    dm.client.post = mocker.Mock(return_value=other_avro_data_file)
     datasource.get_details = mocker.Mock(return_value=datasource_details_result)
 
-    agg = Aggregation(period="month", company=None)
+    # ** start date
+    df = dm.get_data(datasource, company, start_date=datetime.date(2019, 12, 30))
 
-    dm.get_data(datasource, company, agg, start_date=datetime.date(2000, 1, 1))
+    assert len(df) == 2
+    assert df.iloc[0].start_date.date() == datetime.date(2019, 12, 30)
+    assert df.iloc[1].start_date.date() == datetime.date(2019, 12, 31)
 
-    url = urlparse(dm.client.get.call_args[0][0])
-    query = parse_qs(url.query)
-
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
-    assert len(query) == 3
-    assert query["aggregation"] == ["month"]
-    assert query["section_pk"] == [company.id]
-    assert query["period_start__gte"] == ["2000-01-01"]
+    # ** end date
+    df = dm.get_data(datasource, company, end_date=datetime.date(2014, 1, 2))
+    assert len(df) == 2
+    assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 1)
+    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 2)
 
     # ** start and end date
-    dm.client.get = mocker.Mock(return_value=avro_data_file)
 
-    dm.get_data(
+    df = dm.get_data(
         datasource,
         company,
-        start_date=datetime.date(2000, 1, 1),
-        end_date=datetime.date(2001, 1, 1),
+        start_date=datetime.date(2014, 1, 15),
+        end_date=datetime.date(2014, 1, 16),
     )
 
-    url = urlparse(dm.client.get.call_args[0][0])
-    query = parse_qs(url.query)
-
-    assert url.path == "/rest/v1/datasource/{}/rawdata".format(datasource.id)
-    assert len(query) == 3
-    assert query["section_pk"] == [company.id]
-    assert query["period_start__gte"] == ["2000-01-01"]
-    assert query["period_end__lt"] == ["2001-01-01"]
+    assert len(df) == 2
+    assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 15)
+    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 16)
