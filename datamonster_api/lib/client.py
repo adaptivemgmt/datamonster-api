@@ -57,7 +57,10 @@ class Client(object):
         session.headers.update(headers)
 
         retry = requests.packages.urllib3.util.retry.Retry(
-            total=3, backoff_factor=5, status_forcelist=(500, 502, 504)
+            total=3,
+            backoff_factor=5,
+            status_forcelist=(500, 502, 504),
+            method_whitelist=frozenset(["GET", "POST"])
         )
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
@@ -90,7 +93,7 @@ class Client(object):
             or if content type of response is neither json nor avro
         """
 
-        session = self._get_session('GET', path, headers)
+        session = self._get_session("GET", path, headers)
 
         url = "{}{}".format(self.server, path)
         response = session.get(url, verify=self.verify, stream=stream)
@@ -108,7 +111,7 @@ class Client(object):
             or if content type of response is neither json nor avro
         """
 
-        session = self._get_session('POST', path, headers)
+        session = self._get_session("POST", path, headers)
 
         url = "{}{}".format(self.server, path)
         response = session.post(url, json=json, verify=self.verify, stream=stream)
