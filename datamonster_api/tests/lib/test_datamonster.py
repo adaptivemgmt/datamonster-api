@@ -378,15 +378,15 @@ def test_get_data_4(mocker, dm, other_avro_data_file, company, datasource, datas
     # ** start date
     df = dm.get_data(datasource, company, start_date=datetime.date(2019, 12, 30))
 
-    assert len(df) == 3
-    assert df.iloc[0].start_date.date() == datetime.date(2019, 12, 29)
-    assert df.iloc[1].start_date.date() == datetime.date(2019, 12, 30)
-    assert df.iloc[2].start_date.date() == datetime.date(2019, 12, 31)
+    assert len(df) == 2
+    assert df.iloc[0].start_date.date() == datetime.date(2019, 12, 30)
+    assert df.iloc[1].start_date.date() == datetime.date(2019, 12, 31)
 
     # ** end date
     df = dm.get_data(datasource, company, end_date=datetime.date(2014, 1, 2))
-    assert len(df) == 1
+    assert len(df) == 2
     assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 1)
+    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 2)
 
     # ** start and end date
 
@@ -398,5 +398,5 @@ def test_get_data_4(mocker, dm, other_avro_data_file, company, datasource, datas
     )
 
     assert len(df) == 2
-    assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 14)
-    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 15)
+    assert df.iloc[0].start_date.date() == datetime.date(2014, 1, 15)
+    assert df.iloc[1].start_date.date() == datetime.date(2014, 1, 16)

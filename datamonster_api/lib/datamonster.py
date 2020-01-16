@@ -272,12 +272,10 @@ class DataMonster(object):
         # Trim the dates on the client side. This would be more efficient on the server, but we don't support
         # greater than or less than right now
         if start_date is not None and 'end_date' in df:
-            # This is pretty fudgy, but it matches the way things currently work
-            test_date = pandas.Timestamp(start_date - datetime.timedelta(days=1))
-            df = df[df.end_date >= pandas.Timestamp(test_date)]
+            df = df[df.end_date >= pandas.Timestamp(start_date)]
 
         if end_date is not None and 'start_date' in df:
-            df = df[df.start_date < pandas.Timestamp(end_date)]
+            df = df[df.start_date <= pandas.Timestamp(end_date)]
 
         if "end_date" in df:
             df.sort_values(by="end_date", inplace=True)
