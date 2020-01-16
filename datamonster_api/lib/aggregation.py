@@ -33,7 +33,7 @@ class Aggregation(object):
             'includePTD': False
         }
         if self.period == 'fiscalQuarter':
-            agg_dict['section_pk'] = self.company.id
+            agg_dict['sectionPk'] = self.company.id
 
         return agg_dict
 

@@ -73,7 +73,7 @@ def test_to_time_aggregation_dictionary_2(company):
         'cadence': 'fiscal quarterly',
         'aggregationType': 'sum',
         'includePTD': False,
-        'section_pk': company.id
+        'sectionPk': company.id
     }
 
     agg = Aggregation(period="fiscalQuarter", company=company)
