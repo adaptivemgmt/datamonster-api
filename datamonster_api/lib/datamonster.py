@@ -249,7 +249,7 @@ class DataMonster(object):
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
-        filters = {"section_pk": [company.id]}
+        filters = {"section_pk": [int(company.id)]}
 
         if start_date is not None:
             if not datasource.upperDateField:
