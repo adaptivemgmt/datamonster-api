@@ -60,7 +60,7 @@ class Client(object):
             total=3,
             backoff_factor=5,
             status_forcelist=(500, 502, 504),
-            method_whitelist=frozenset(["GET", "POST"])
+            method_whitelist=frozenset(["GET", "POST"]),
         )
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
