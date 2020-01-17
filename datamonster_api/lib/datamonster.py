@@ -4,13 +4,11 @@ import json
 import pandas
 import six
 
-from .aggregation import aggregation_sanity_check
 from .client import Client
 from .company import Company
 from .data_group import DataGroup, DataGroupColumn
 from .datasource import Datasource
 from .errors import DataMonsterError
-from .utils import format_date
 
 __all__ = ["DataMonster", "DimensionSet"]
 
@@ -27,8 +25,8 @@ class DataMonster(object):
     company_path = "/rest/v1/company"
     datasource_path = "/rest/v1/datasource"
     dimensions_path = "/rest/v1/datasource/{}/dimensions"
-    rawdata_path = "{}/rawdata?{}"
     data_group_path = '/rest/v1/data_group'
+    rawdata_path = "/rest/v2/datasource/{}/rawdata"
 
     DATAMONSTER_SCHEMA_FIELDS = {
         "lower_date": "start_date",
@@ -222,12 +220,6 @@ class DataMonster(object):
     def _get_data_group_path(self, data_group_id):
         return '{}/{}'.format(self.data_group_path, data_group_id)
 
-    def _get_rawdata_path(self, datasource_id, params):
-        return self.rawdata_path.format(
-            self._get_datasource_path(datasource_id),
-            six.moves.urllib.parse.urlencode(params),
-        )
-
     def _get_dimensions_path(self, uuid):
         return self.dimensions_path.format(uuid)
 
@@ -262,50 +254,70 @@ class DataMonster(object):
         # todo: support multiple companies
         self._check_param(company=company, datasource=datasource)
 
-        params = {"section_pk": company.id}
+        filters = {"section_pk": [int(company.id)]}
 
         if start_date is not None:
             if not datasource.upperDateField:
                 raise DataMonsterError("This data source does not support date queries")
-            key = "{}__gte".format(datasource.upperDateField)
-            params[key] = format_date(start_date)
 
         if end_date is not None:
             if not datasource.lowerDateField:
                 raise DataMonsterError("This data source does not support date queries")
-            key = "{}__lt".format(datasource.lowerDateField)
-            params[key] = format_date(end_date)
 
-        if aggregation:
-            aggregation_sanity_check(aggregation, company=company)
-            if aggregation.period is not None:
-                params["aggregation"] = aggregation.period
+        if aggregation is not None and aggregation.period == 'fiscalQuarter' and aggregation.company != company:
+            raise DataMonsterError("Aggregating by the fiscal quarter of a different company not yet supported")
 
-        schema, df = self.get_raw_data(datasource, **params)
+        schema, df = self.get_data_raw(datasource, filters, aggregation)
 
         if datasource.type == "datasource":
             df = self._datamonster_data_mapper(
                 self.DATAMONSTER_SCHEMA_FIELDS, schema, df
             )
 
+        # Trim the dates on the client side. This would be more efficient on the server, but we don't support
+        # greater than or less than right now
+        if start_date is not None and 'end_date' in df:
+            df = df[df.end_date >= pandas.Timestamp(start_date)]
+
+        if end_date is not None and 'start_date' in df:
+            df = df[df.start_date <= pandas.Timestamp(end_date)]
+
         if "end_date" in df:
             df.sort_values(by="end_date", inplace=True)
         return df
 
-    def get_raw_data(self, datasource, **kwargs):
+    def get_data_raw(self, datasource, filters=None, aggregation=None):
         """Get raw data for all companies available in the data source.
 
         :param datasource: ``Datasource`` object to get the data for
-        :param kwargs: unparsed ``kwargs`` to get passed as query parameters
+        :param aggregation: ``Aggregation`` object to specify requested aggregation
+        :param filters: dictionary of requested filters
 
         :return: (schema, pandas.DataFrame)
 
-        See `here <examples.html#get-raw-data>`__ for example usage.
+        See `here <examples.html#get-data-raw>`__ for example usage.
         """
-        headers = {"Accept": "avro/binary"}
-        url = self._get_rawdata_path(datasource.id, kwargs)
-        resp = self.client.get(url, headers, stream=True)
+        post_data = {
+            'forecast': False,
+            'valueAggregation': None,
+            'timeAggregation': None,
+        }
+
+        if filters is not None:
+            post_data['filters'] = filters
+        if aggregation is not None:
+            post_data['timeAggregation'] = aggregation.to_time_aggregation_dictionary(
+                datasource.aggregationType
+            )
+
+        headers = {"Accept": "avro/binary", 'Content-Type': 'application/json'}
+        url = self.rawdata_path.format(datasource.id)
+        resp = self.client.post(url, post_data, headers, stream=True)
         return self._avro_to_df(resp.content, datasource.fields)
+
+    def get_raw_data(self, *args, **kwargs):
+        """This function is deprecated. Please use the get_data_raw function instead"""
+        raise DataMonsterError("This function has been deprecated. Please use get_data_raw")
 
     def _avro_to_df(self, avro_buffer, data_types):
         """Read an avro structure into a dataframe and minimially parse it
