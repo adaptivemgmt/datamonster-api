@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from datamonster_api import DataMonster, Company, Datasource
+from datamonster_api import DataMonster, Company, Datasource, DataGroup, DataGroupColumn
 
 
 @pytest.fixture
@@ -391,3 +391,66 @@ def multi_page_dimensions_results():
 def large_filter_dict():
     N = 500000000  # 500_000_000
     return {str(i): i for i in range(N)}
+
+
+@pytest.fixture
+def data_group_details_result():
+    """As returned by DM `GET`
+    """
+    return {
+        '_id': 123,
+        'columns': [
+            {'type_': 'date', 'name': 'end date'},
+            {'type_': 'date', 'name': 'Start Date'},
+            {'type_': 'string', 'name': 'Ticker'},
+            {'type_': 'string', 'name': 'Split2'},
+            {'type_': 'string', 'name': 'Split 1'},
+            {'type_': 'number', 'name': 'dummy data 1'},
+            {'type_': 'number', 'name': 'dummy data 2'}
+        ],
+        'name': 'Test By Id'
+    }
+
+
+@pytest.fixture
+def single_page_data_group_results():
+    return {
+        "pagination": {
+            "totalResults": 2,
+            "pageSize": 100,
+            "currentPage": 0,
+            "nextPageURI": None,
+            "previousPageURI": None,
+        },
+        "results": [
+            {
+                '_id': 123,
+                'columns': [
+                    {'type_': 'date', 'name': 'end date'},
+                ],
+                'name': 'first result'
+            },
+            {
+                '_id': 456,
+                'columns': [
+                    {'type_': 'date', 'name': 'Start Date'},
+                    {'type_': 'number', 'name': 'dummy data 1'},
+                ],
+                'name': 'second result'
+            },
+        ],
+    }
+
+
+@pytest.fixture
+def data_group():
+    return DataGroup(
+        1,
+        'data group name',
+        [
+            DataGroupColumn('date col', 'date'),
+            DataGroupColumn('number col', 'number'),
+            DataGroupColumn('string col', 'string')
+        ],
+        None
+    )

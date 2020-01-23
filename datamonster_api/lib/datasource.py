@@ -6,7 +6,7 @@ from .errors import DataMonsterError
 class Datasource(BaseClass):
     """Representation of a data source in DataMonster
 
-    :param _id: (str) uniquer internal identifier for the data source
+    :param _id: (str) unique internal identifier for the data source
     :param name: (dict) name of the data source, including the vendor for the data
     :param category: (list) associated categories
     :param uri: (str) DataMonster resource identifier associated with the data source
