@@ -27,11 +27,10 @@ DATAFRAME_TYPES = {
     np.int64: 'long',
     np.float64: 'double',
     str: 'string',
-    str: 'string',
     datetime.date: 'string',
     datetime.datetime: 'string',
     pd._libs.tslib.Timestamp: 'string',
-    decimal.Decimal: 'string'  # These get returned as strings in the json response
+    decimal.Decimal: 'double'  # These get returned as strings in the json response
 }
 
 
@@ -56,7 +55,7 @@ def dataframe_to_avro_bytes(df, name, namespace):
     data_fields = df.columns
     fields = []
     for field in data_fields:
-        data_type = type(df[field].notnull().iloc[0])
+        data_type = type(df[field][df[field].notnull()].iloc[0])
         item = {
             'name': field,
             'type': DATAFRAME_TYPES[data_type]
@@ -93,7 +92,7 @@ def avro_dumps(data, schema):
     return contents
 
 
-def convert_dict_fields_to_str(original, preserve_types=None):
+def convert_dict_fields_to_str(original, preserve_types=[float, int]):
     """Given a dictionary, convert the specified fields to string"""
 
     preserve_types = preserve_types or []

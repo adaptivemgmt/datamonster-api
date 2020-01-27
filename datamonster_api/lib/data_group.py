@@ -1,6 +1,8 @@
 from .base import BaseClass
 from .errors import DataMonsterError
 import numpy as np
+from io import BytesIO
+from .utils import dataframe_to_avro_bytes
 
 date_regex = r'\d{4}-\d{2}-\d{2}'
 
@@ -11,13 +13,18 @@ class DataGroup(BaseClass):
     :param _id: (int) unique internal identifier for the Data Group
     :param name: (str) name of the Data Group
     :param columns: (list of ``DataGroupColumn`` objects) representing columns of uploaded data
+    :param status: (str, enum) `success` if all Data Sources in the group have successfully loaded
+        `processing` if any DataSource in the group is still processing
+        `error` if any DataSource in the group is in an error state
+        Note: `error` takes precedence over `processing`
     :param dm: ``DataMonster`` object
     """
 
-    def __init__(self, _id, name, columns, dm):
+    def __init__(self, _id, name, columns, status, dm):
         self.id = _id
         self.name = name
         self.columns = columns
+        self.status = status
         self.dm = dm
 
     def __hash__(self):
@@ -34,6 +41,19 @@ class DataGroup(BaseClass):
         :return: (dict)
         """
         return self.dm.get_data_group_details(self.id)
+
+    def start_data_refresh(self, data_frame):
+        avro_file = BytesIO(dataframe_to_avro_bytes(data_frame, 'upload_data', 'com.adaptivemgmt.upload'))
+        files = {'avro_file': avro_file}
+        headers = {'Accept': 'avro/binary'}
+        try:
+            response = self.dm.client.post(self._get_refresh_url(), {}, headers=headers, files=files)
+            print(response)
+        except Exception as err:
+            print(err)
+
+    def _get_refresh_url(self):
+        return '{}/refresh'.format(self.dm._get_data_group_path(self.id))
 
     @staticmethod
     def _get_dgctype_(column):
