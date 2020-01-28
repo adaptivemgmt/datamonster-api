@@ -5,6 +5,8 @@ from io import BytesIO
 from .utils import dataframe_to_avro_bytes
 
 date_regex = r'\d{4}-\d{2}-\d{2}'
+max_file_size = 64 * 1024 * 1024  # flask server only allows 64MB files
+data_frame_cutoff_size = 2 * max_file_size  # Don't even make an avro file if the df is too big
 
 
 class DataGroup(BaseClass):
@@ -13,7 +15,9 @@ class DataGroup(BaseClass):
     :param _id: (int) unique internal identifier for the Data Group
     :param name: (str) name of the Data Group
     :param columns: (list of ``DataGroupColumn`` objects) representing columns of uploaded data
-    :param status: (str, enum) `success` if all Data Sources in the group have successfully loaded
+    :param status: (str, enum) Status of the DataSources in DataGroup at instantiation time. This
+        property is updated by ``get_current_status``. It can take one of the following three values.
+        `success` if all Data Sources in the group have successfully loaded
         `processing` if any DataSource in the group is still processing
         `error` if any DataSource in the group is in an error state
         Note: `error` takes precedence over `processing`
@@ -43,17 +47,44 @@ class DataGroup(BaseClass):
         return self.dm.get_data_group_details(self.id)
 
     def start_data_refresh(self, data_frame):
+        if sum(data_frame.memory_usage()) > data_frame_cutoff_size:
+            raise DataMonsterError('Data Too Large. Data Groups can be refreshed with data < 64 MB.')
+
         avro_file = BytesIO(dataframe_to_avro_bytes(data_frame, 'upload_data', 'com.adaptivemgmt.upload'))
+        if avro_file.getbuffer().nbytes > max_file_size:
+            raise DataMonsterError('Data Too Large. Data Groups can be refreshed with data < 64 MB.')
+
         files = {'avro_file': avro_file}
         headers = {'Accept': 'avro/binary'}
         try:
-            response = self.dm.client.post(self._get_refresh_url(), {}, headers=headers, files=files)
-            print(response)
-        except Exception as err:
-            print(err)
+            return self.dm.client.post(self._get_refresh_url(), {}, headers=headers, files=files)
+        except Exception:
+            raise DataMonsterError('Unknown problem refreshing data. Please contact DataMonster Customer Service.')
 
     def _get_refresh_url(self):
         return '{}/refresh'.format(self.dm._get_data_group_path(self.id))
+
+    def get_current_status(self):
+        """
+        Query Data Monster servers for the most up-to-date status of this DataGroup.
+        Calling this method will update the `status` field on this instance and return it.
+
+        :return: The status of this DataGroup. Values can be one of the following:
+            `success` if all Data Sources in the group have successfully loaded
+            `processing` if any DataSource in the group is still processing
+            `error` if any DataSource in the group is in an error state
+            Note: `error` takes precedence over `processing`
+        """
+        try:
+            res = self.dm.client.get(self._get_status_url())
+            if res['_id'] == self.id and res['status'] is not None:
+                self.status = res['status']
+                return self.status
+        except Exception:
+            raise DataMonsterError('Unknown problem fetching current status. Please contact DataMonster Customer Service.')
+
+    def _get_status_url(self):
+        return '{}/status'.format(self.dm._get_data_group_path(self.id))
 
     @staticmethod
     def _get_dgctype_(column):
