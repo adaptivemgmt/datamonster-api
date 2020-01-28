@@ -81,7 +81,8 @@ class DataGroup(BaseClass):
                 self.status = res['status']
                 return self.status
         except Exception:
-            raise DataMonsterError('Unknown problem fetching current status. Please contact DataMonster Customer Service.')
+            raise DataMonsterError('Unknown problem fetching current status. ' +
+                                   'Please contact DataMonster Customer Service.')
 
     def _get_status_url(self):
         return '{}/status'.format(self.dm._get_data_group_path(self.id))
