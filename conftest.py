@@ -408,7 +408,8 @@ def data_group_details_result():
             {'type_': 'number', 'name': 'dummy data 1'},
             {'type_': 'number', 'name': 'dummy data 2'}
         ],
-        'name': 'Test By Id'
+        'name': 'Test By Id',
+        'status': 'success'
     }
 
 
@@ -428,7 +429,8 @@ def single_page_data_group_results():
                 'columns': [
                     {'type_': 'date', 'name': 'end date'},
                 ],
-                'name': 'first result'
+                'name': 'first result',
+                'status': 'processing'
             },
             {
                 '_id': 456,
@@ -436,7 +438,8 @@ def single_page_data_group_results():
                     {'type_': 'date', 'name': 'Start Date'},
                     {'type_': 'number', 'name': 'dummy data 1'},
                 ],
-                'name': 'second result'
+                'name': 'second result',
+                'status': 'success'
             },
         ],
     }
@@ -452,5 +455,6 @@ def data_group():
             DataGroupColumn('number col', 'number'),
             DataGroupColumn('string col', 'string')
         ],
+        'error',
         None
     )
