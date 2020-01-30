@@ -1,7 +1,7 @@
 import os
 import setuptools
 
-requires = ["fastavro", "more-itertools", "numpy", "pandas", "requests", "six"]
+requires = ["avro-python3", "fastavro", "more-itertools", "numpy", "pandas", "requests", "six"]
 
 here = os.path.abspath(os.path.dirname(__file__))
 
