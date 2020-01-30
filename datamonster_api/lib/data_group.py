@@ -1,17 +1,12 @@
 from .base import BaseClass
 from .errors import DataMonsterError
 import numpy as np
-<<<<<<< HEAD
 from io import BytesIO
 from .utils import dataframe_to_avro_bytes
 
 date_regex = r'\d{4}-\d{2}-\d{2}'
 max_file_size = 64 * 1024 * 1024  # flask server only allows 64MB files
 data_frame_cutoff_size = 2 * max_file_size  # Don't even make an avro file if the df is too big
-=======
-
-date_regex = r'\d{4}-\d{2}-\d{2}'
->>>>>>> master
 
 
 class DataGroup(BaseClass):
@@ -20,7 +15,6 @@ class DataGroup(BaseClass):
     :param _id: (int) unique internal identifier for the Data Group
     :param name: (str) name of the Data Group
     :param columns: (list of ``DataGroupColumn`` objects) representing columns of uploaded data
-<<<<<<< HEAD
     :param status: (str, enum) Status of the DataSources in DataGroup at instantiation time. This
         property is updated by ``get_current_status``. It can take one of the following three values.
         `success` if all Data Sources in the group have successfully loaded
@@ -35,15 +29,6 @@ class DataGroup(BaseClass):
         self.name = name
         self.columns = columns
         self.status = status
-=======
-    :param dm: ``DataMonster`` object
-    """
-
-    def __init__(self, _id, name, columns, dm):
-        self.id = _id
-        self.name = name
-        self.columns = columns
->>>>>>> master
         self.dm = dm
 
     def __hash__(self):
@@ -61,7 +46,6 @@ class DataGroup(BaseClass):
         """
         return self.dm.get_data_group_details(self.id)
 
-<<<<<<< HEAD
     def start_data_refresh(self, data_frame):
         if sum(data_frame.memory_usage()) > data_frame_cutoff_size:
             raise DataMonsterError('Data Too Large. Data Groups can be refreshed with data < 64 MB.')
@@ -103,8 +87,6 @@ class DataGroup(BaseClass):
     def _get_status_url(self):
         return '{}/status'.format(self.dm._get_data_group_path(self.id))
 
-=======
->>>>>>> master
     @staticmethod
     def _get_dgctype_(column):
         if hasattr(column, 'str') and column.str.match(date_regex).any():
