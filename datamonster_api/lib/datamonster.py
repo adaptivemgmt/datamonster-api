@@ -6,6 +6,7 @@ import six
 
 from .client import Client
 from .company import Company
+from .data_group import DataGroup, DataGroupColumn
 from .datasource import Datasource
 from .errors import DataMonsterError
 
@@ -24,6 +25,7 @@ class DataMonster(object):
     company_path = "/rest/v1/company"
     datasource_path = "/rest/v1/datasource"
     dimensions_path = "/rest/v1/datasource/{}/dimensions"
+    data_group_path = '/rest/v1/data_group'
     rawdata_path = "/rest/v2/datasource/{}/rawdata"
 
     DATAMONSTER_SCHEMA_FIELDS = {
@@ -214,6 +216,9 @@ class DataMonster(object):
 
     def _get_datasource_path(self, datasource_id):
         return "{}/{}".format(self.datasource_path, datasource_id)
+
+    def _get_data_group_path(self, data_group_id):
+        return '{}/{}'.format(self.data_group_path, data_group_id)
 
     def _get_dimensions_path(self, uuid):
         return self.dimensions_path.format(uuid)
@@ -444,6 +449,69 @@ class DataMonster(object):
             raise DataMonsterError(
                 "Problem with filters when getting dimensions: {}".format(e)
             )
+
+    ##############################################
+    #           DataGroup methods
+    ##############################################
+
+    def get_data_groups(self, query=None):
+        """Get available data groups
+
+        :param query: (str) Optional query that will restrict data groups by name or data source name
+        :return: Iterator of ``DataGroup`` objects.
+        """
+        params = {}
+        if query is not None:
+            params['q'] = query
+
+        url = self.data_group_path
+        if params:
+            url = ''.join([url, '?', six.moves.urllib.parse.urlencode(params)])
+
+        datagroups = self._get_paginated_results(url)
+        return six.moves.map(self._data_group_result_to_object, datagroups)
+
+    def get_data_group_details(self, id):
+        """Given a data group id, return the corresponding ``DataGroup`` object
+
+        :param id: (int)
+
+        :return: Single ``DataGroup`` object with the given id
+
+        :raises: ``DataMonsterError`` if no data group matches the given id
+        """
+        path = self._get_data_group_path(id)
+        return self.client.get(path)
+
+    def get_data_group_by_id(self, id):
+        """Give a data group pk (primary key),
+        return the corresponding ``DataGroup`` object.
+        To find the pk for a data group, first find it using
+        the iterator returned by ``get_data_groups()``, then
+        call ``.id`` on the ``DataGroup`` object.
+
+        :param id: (int)
+
+        :return: Single ``DataGroup`` object with the given id
+
+        :raises: ``DataMonsterError`` if no data group matches the given id
+        """
+        dg = self.get_data_group_details(id)
+        return self._data_group_result_to_object(dg, has_details=True)
+
+    def _data_group_result_to_object(self, data_group, has_details=False):
+        columns = [DataGroupColumn(**column) for column in data_group['columns']]
+        dg_inst = DataGroup(
+            data_group['_id'],
+            data_group['name'],
+            columns,
+            self
+        )
+
+        if has_details:
+            dg_inst.set_details(data_group)
+
+        return dg_inst
 
 
 class DimensionSet(object):
