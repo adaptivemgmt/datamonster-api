@@ -408,12 +408,8 @@ def data_group_details_result():
             {'type_': 'number', 'name': 'dummy data 1'},
             {'type_': 'number', 'name': 'dummy data 2'}
         ],
-<<<<<<< HEAD
         'name': 'Test By Id',
         'status': 'success'
-=======
-        'name': 'Test By Id'
->>>>>>> master
     }
 
 
