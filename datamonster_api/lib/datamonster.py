@@ -505,6 +505,7 @@ class DataMonster(object):
             data_group['_id'],
             data_group['name'],
             columns,
+            data_group['status'],
             self
         )
 
