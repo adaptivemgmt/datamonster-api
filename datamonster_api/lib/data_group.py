@@ -47,6 +47,7 @@ class DataGroup(BaseClass):
         return self.dm.get_data_group_details(self.id)
 
     def start_data_refresh(self, data_frame):
+        self._accepts(data_frame)
         if sum(data_frame.memory_usage()) > data_frame_cutoff_size:
             raise DataMonsterError('Data Too Large. Data Groups can be refreshed with data < 64 MB.')
 
