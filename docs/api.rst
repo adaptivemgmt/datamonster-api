@@ -30,3 +30,12 @@ Objects
     :exclude-members: pk2company
 
 .. autoclass:: datamonster_api.Aggregation
+
+Data Upload
+===================
+
+.. autoclass:: datamonster_api.DataGroup
+    :members:
+
+.. autoclass:: datamonster_api.DataGroupColumn
+    :members:
