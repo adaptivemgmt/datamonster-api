@@ -333,3 +333,5 @@ To refresh the data, call `start_data_refresh` with a valid `pandas.DataFrame` o
     dg.get_current_status()
 
 One will notice the `status` of the data group object change.
+
+If the schema of dataframe does not match the schema expected by data group, an exception is raised with a useful message.
