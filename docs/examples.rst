@@ -297,23 +297,27 @@ prettyprints the single dimension dict:
 How to Data Upload
 ^^^^^^^^^^^^^^^^^^^
 
-One can view all data groups they own:
-
-Initialize a ``DataMonster`` object:
+Currently the API supports the ability to search for data groups one owns, check the processing status, and upload valid DataFrames. One must still upload data through the UI - specifying the schema. The API is meant to programmatically refresh the data.
 
 ..  code::
 
     for data_group in dm.get_data_groups():
         print(data_group)
 
-Alternatively, one can fetch a data group by its ID:
+Alternatively, one can fetch a data group by its ID and view it's status:
 
 ..  code::
 
     dg = dm.get_data_group_by_id(1012)
+    dg.get_current_status()
 
+To view the columns of the data group, and hence the schema, to verify the type of data we wish to reupload:
 
-Once one has found the data group they wish to manipulate, we can view information of the data group and refresh the data. Call `start_data_refresh` with the appropriate `pandas.DataFrame` object that matches the schema of the data group.
+..  code::
+
+    dg.columns
+
+To refresh the data, call `start_data_refresh` with a valid `pandas.DataFrame` object that matches the schema of the data group.
 
 ..  code::
 
@@ -326,5 +330,6 @@ Once one has found the data group they wish to manipulate, we can view informati
         ...
     })
     dg.start_data_refresh(df)
+    dg.get_current_status()
 
 One will notice the `status` of the data group object change.
