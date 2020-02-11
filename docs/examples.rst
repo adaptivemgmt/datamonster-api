@@ -297,21 +297,21 @@ prettyprints the single dimension dict:
 How to Data Upload
 ^^^^^^^^^^^^^^^^^^^
 
-Currently the API supports the ability to search for data groups one owns, check the processing status, and upload valid DataFrames. One must still upload data through the UI - specifying the schema. The API is meant to programmatically refresh the data.
+The API is meant to programmatically refresh existing data uploads. The initial upload that specifies the schema must still be uploaded via UI. Currently the API supports the ability to search for data groups one owns, check the processing status, and uploading valid DataFrames to existing data groups.
 
 ..  code::
 
     for data_group in dm.get_data_groups():
         print(data_group)
 
-Alternatively, one can fetch a data group by its ID and view it's status:
+Alternatively, one can fetch a data group by its ID and view its status:
 
 ..  code::
 
     dg = dm.get_data_group_by_id(1012)
     dg.get_current_status()
 
-To view the columns of the data group, and hence the schema, to verify the type of data we wish to reupload:
+To view the columns (and schema) of the data group in order to verify the type of data we wish to re-upload:
 
 ..  code::
 
@@ -332,6 +332,6 @@ To refresh the data, call `start_data_refresh` with a valid `pandas.DataFrame` o
     dg.start_data_refresh(df)
     dg.get_current_status()
 
-One will notice the `status` of the data group object change.
+The status of the data group object will change to reflect the latest status
 
 If the schema of dataframe does not match the schema expected by data group, an exception is raised with a useful message.
