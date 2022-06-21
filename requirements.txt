@@ -7,7 +7,7 @@ fastavro==0.22.7
 funcsigs==1.0.2
 idna==2.8
 more-itertools==4.3.0
-numpy==1.17.4
+numpy==1.22.0
 pandas==0.25.3
 pathlib2==2.3.5
 pluggy==0.13.1
